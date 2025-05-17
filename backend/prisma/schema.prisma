@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+        
+
+// User model
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  password         String
+  name             String
+  role             UserRole          @default(EMPLOYEE)
+  avatar           String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  orders           Order[]           @relation("CreatedBy")
+  unavailableDays  UnavailableDay[]
+  unavailableTimes UnavailableTime[]
+  schedules        Schedule[]
+  notifications    Notification[]    @relation("NotificationRecipient")
+}
+
+enum UserRole {
+  OWNER
+  EMPLOYEE
+}
+
+// Menu item model
+model MenuItem {
+  id          String       @id @default(uuid())
+  name        String
+  nameVi      String?
+  price       Float
+  description String?
+  image       String?
+  category    String
+  vegetarian  Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  orderItems  OrderItem[]
+  options     MenuOption[]
+}
+
+model MenuOption {
+  id         String           @id @default(uuid())
+  name       String
+  menuItemId String
+  menuItem   MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  choices    OptionChoice[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  selected   SelectedOption[]
+}
+
+model OptionChoice {
+  id            String           @id @default(uuid())
+  name          String
+  price         Float?
+  menuOptionId  String
+  menuOption    MenuOption       @relation(fields: [menuOptionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  selectedIn    SelectedOption[]
+}
+
+// Order models
+model Order {
+  id            String      @id @default(uuid())
+  status        OrderStatus @default(PENDING)
+  total         Float
+  isUrgent      Boolean     @default(false)
+  isVIP         Boolean     @default(false)
+  tableNumber   Int?
+  customerName  String?
+  createdById   String
+  createdBy     User        @relation("CreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  items         OrderItem[]
+  notifications Notification[]
+}
+
+model OrderItem {
+  id              String          @id @default(uuid())
+  orderId         String
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId      String
+  menuItem        MenuItem        @relation(fields: [menuItemId], references: [id])
+  quantity        Int
+  notes           String?
+  status          OrderItemStatus @default(PENDING)
+  selectedOptions SelectedOption[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model SelectedOption {
+  id             String        @id @default(uuid())
+  orderItemId    String
+  orderItem      OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  menuOptionId   String
+  menuOption     MenuOption    @relation(fields: [menuOptionId], references: [id])
+  optionChoiceId String
+  optionChoice   OptionChoice  @relation(fields: [optionChoiceId], references: [id])
+  extraPrice     Float?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  PENDING
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+// Schedule models
+model Schedule {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UnavailableDay {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UnavailableTime {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek String   // "monday", "tuesday", etc.
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Notification model
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  content   String
+  orderId   String?
+  order     Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  read      Boolean          @default(false)
+  userId    String
+  user      User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+enum NotificationType {
+  NEW_ORDER
+  ORDER_UPDATED
+  ORDER_COMPLETED
+  SCHEDULE_UPDATED
+  ACCOUNT_UPDATED
+}

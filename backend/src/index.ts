@@ -4,21 +4,27 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import apiRoutes from './routes';
+
+// Load environment variables
+dotenv.config();
 
 // Create __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
+// Environment variables
 const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8080';
 
 // Initialize Express
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: CORS_ORIGIN,
   credentials: true
 }));
 app.use(express.json());
@@ -29,7 +35,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: CORS_ORIGIN,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -68,12 +74,31 @@ io.on('connection', (socket) => {
 });
 
 // API routes
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+app.use('/api', apiRoutes);
+
+// Base route
+app.get('/', (req, res) => {
+  res.json({ message: 'Viet Baguette API Server' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    message: err.message || 'Internal Server Error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 // Start server
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Frontend URL: ${FRONTEND_URL}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't crash the server
 }); 
