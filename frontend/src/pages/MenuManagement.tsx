@@ -285,10 +285,19 @@ const MenuManagement = () => {
       const method = selectedItem ? 'PUT' : 'POST';
       const url = selectedItem ? `/api/menu/${selectedItem.id}` : '/api/menu';
       
+      // const response = await fetch(url, {
+      //   method,
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(formData),
+      // });
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('viet_baguette_token')}`
         },
         body: JSON.stringify(formData),
       });
