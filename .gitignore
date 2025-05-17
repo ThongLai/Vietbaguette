@@ -20,7 +20,7 @@ backend/.env
 Thumbs.db
 
 # Prisma
-prisma/migrations/
+backend/prisma/migrations/
 
 # Others
 npm-debug.log*
