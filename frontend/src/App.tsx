@@ -5,6 +5,8 @@ import Menu from './pages/Menu';
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import Navbar from './components/Navbar';
+import Landing from './pages/Landing';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -34,36 +36,12 @@ function App() {
           </button>
         </div>
         <h1 className="text-4xl font-bold mb-4">{t('welcome')}</h1>
-        <nav className="space-x-4 mb-6">
-          <Link to="/menu" className="text-blue-600 dark:text-blue-400">{t('menu')}</Link>
-          <a href="#" className="text-blue-600 dark:text-blue-400">{t('login')}</a>
-          <a href="#" className="text-blue-600 dark:text-blue-400">{t('logout')}</a>
-        </nav>
+        <Navbar />
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/menu" element={<Menu />} />
-          <Route path="/" element={
-            <>
-              <div>
-                <a href="https://vite.dev" target="_blank">
-                  <img src={viteLogo} className="logo" alt="Vite logo" />
-                </a>
-                <a href="https://react.dev" target="_blank">
-                  <img src={reactLogo} className="logo react" alt="React logo" />
-                </a>
-              </div>
-              <div className="card">
-                <button onClick={() => setCount((count) => count + 1)}>
-                  count is {count}
-                </button>
-                <p>
-                  Edit <code>src/App.tsx</code> and save to test HMR
-                </p>
-              </div>
-              <p className="read-the-docs">
-                Click on the Vite and React logos to learn more
-              </p>
-            </>
-          } />
+          <Route path="/about" element={<div className='p-8 text-center'>About page coming soon...</div>} />
+          <Route path="/contact" element={<div className='p-8 text-center'>Contact page coming soon...</div>} />
         </Routes>
       </div>
     </Router>
