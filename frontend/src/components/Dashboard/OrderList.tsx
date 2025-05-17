@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X, Clock, Check, AlertTriangle, UserCheck, Bell, Edit } from 'lucide-react';
 import { Order, OrderItem, useOrders } from '@/contexts/OrderContext';
@@ -225,18 +224,12 @@ const OrderList = () => {
   return (
     <div>
       <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="active">
             {t('dashboard.orders.active')} ({activeOrders.length})
           </TabsTrigger>
           <TabsTrigger value="completed">
             {t('dashboard.orders.completed')} ({completedOrders.length})
-          </TabsTrigger>
-          <TabsTrigger value="new">
-            <div className="flex items-center">
-              <Bell className="mr-2 h-4 w-4" />
-              {t('dashboard.orders.new')}
-            </div>
           </TabsTrigger>
         </TabsList>
         
@@ -280,16 +273,6 @@ const OrderList = () => {
               ))}
             </ScrollArea>
           )}
-        </TabsContent>
-        
-        <TabsContent value="new" className="mt-0">
-          <div className="bg-muted/20 p-6 rounded-lg border">
-            <h2 className="text-lg font-semibold mb-4">Add New Order</h2>
-            <p className="text-muted-foreground mb-4">
-              This feature will be implemented in the next phase.
-            </p>
-            <Button disabled>Create New Order</Button>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
