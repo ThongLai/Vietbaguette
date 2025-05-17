@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+    
         if (!response.ok) {
           throw new Error('Failed to get user profile');
         }

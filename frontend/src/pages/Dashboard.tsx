@@ -54,10 +54,10 @@ const Dashboard = () => {
                   <TabsTrigger value="new-order">Create Order</TabsTrigger>
                 </TabsList>
                 <TabsContent value="orders">
-                  <div>
-                    <h3 className="font-medium text-lg mb-4">Order Management</h3>
-                    <OrderList />
-                  </div>
+              <div>
+                <h3 className="font-medium text-lg mb-4">Order Management</h3>
+                <OrderList />
+              </div>
                 </TabsContent>
                 <TabsContent value="new-order">
                   <div>
