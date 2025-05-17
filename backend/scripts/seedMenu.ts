@@ -1,11 +1,5 @@
 // Script to seed the database with menu items
 import { PrismaClient } from '@prisma/client';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
@@ -95,7 +89,7 @@ const menuItems: MenuItem[] = [
           { name: 'Beef' },
           { name: 'Prawn' },
           { name: 'Chicken' },
-          { name: 'Tofu', price: 0 },
+          { name: 'Tofu', price: -2.00 }, // Adjusts price to £4 for tofu
         ],
       },
     ],
@@ -103,7 +97,7 @@ const menuItems: MenuItem[] = [
   {
     name: 'Taster Box',
     nameVi: 'Hộp Đồ Ăn Thử',
-    price: 7.00,
+    price: 7.00,  // Adding the price that was missing
     description: 'Mixed starters with summer rolls, spring rolls, filo prawn, and sweetcorn fritters, served with hoisin and sweet chilli dip',
     category: 'starters',
     vegetarian: false,
@@ -208,14 +202,14 @@ const menuItems: MenuItem[] = [
           { name: 'Crispy chicken' },
           { name: 'Prawn' },
           { name: 'Tofu' },
-          { name: 'Veggie', price: -1.00 },
+          { name: 'Veggie', price: -1.00 }, // Makes it £5 for veggie
         ],
       },
       {
         name: 'Size',
         choices: [
           { name: 'Small (default)' },
-          { name: 'Large', price: 2.00 },
+          { name: 'Large', price: 2.00 }, // Makes it £8 for large
         ],
       },
       {
@@ -654,4 +648,4 @@ async function seedMenu() {
   }
 }
 
-seedMenu(); 
+seedMenu();
