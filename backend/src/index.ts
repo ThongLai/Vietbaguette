@@ -3,6 +3,8 @@ import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Server as SocketIOServer } from 'socket.io';
+import menuRoutes from './routes/menu';
+import orderRoutes from './routes/order';
 
 dotenv.config();
 
@@ -28,6 +30,9 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
   });
 });
+
+app.use('/api/menu', menuRoutes);
+app.use('/api/orders', orderRoutes);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
