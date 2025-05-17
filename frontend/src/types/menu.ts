@@ -5,7 +5,7 @@ export interface MenuItem {
   description: string
   price: number
   category: string
-  imageUrl?: string
+  image?: string
   vegetarian: boolean
   spicy?: boolean
   options?: MenuOption[]

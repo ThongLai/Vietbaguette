@@ -182,7 +182,7 @@ const OrderCard = ({ order }: { order: Order }) => {
           )}
           
           <Button 
-            variant={order.isUrgent ? "destructive" : "outline-solid"} 
+            variant={order.isUrgent ? "destructive" : "outline"} 
             size="sm"
             onClick={handleToggleUrgent}
             className="flex-1"
@@ -192,7 +192,7 @@ const OrderCard = ({ order }: { order: Order }) => {
           </Button>
           
           <Button 
-            variant={order.isVIP ? "secondary" : "outline-solid"} 
+            variant={order.isVIP ? "secondary" : "outline"} 
             size="sm"
             onClick={handleToggleVIP}
             className="flex-1"

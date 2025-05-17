@@ -31,7 +31,7 @@ const Index = () => {
           <h1 className="font-cursive text-5xl md:text-7xl mb-6 text-white">
             {t('home.hero.title')}
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl mx-auto">
+          <p className="font-cursive text-xl md:text-3xl mb-8 text-white/90 max-w-2xl mx-auto">
             {t('home.hero.subtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
