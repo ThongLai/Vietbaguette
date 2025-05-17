@@ -11,6 +11,16 @@ The project is organized into two main directories:
 - **frontend/**: Contains the React application with UI components, state management, and user interface logic
 - **backend/**: Contains the Express server, Socket.io for real-time communications, and API endpoints
 
+## Tech Stack
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
 ## How to run the project
 
 ### Running the frontend
@@ -110,16 +120,6 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
 
 <!-- ## How I deployed this project?
 
