@@ -58,7 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         const userData = await response.json();
-        setUser(userData);
+        // Make sure we have a valid user object with required fields
+        if (userData && userData.id && userData.name && userData.email && userData.role) {
+          setUser(userData);
+        } else {
+          console.error('Invalid user data received:', userData);
+          throw new Error('Invalid user data received');
+        }
       } catch (error) {
         console.error('Failed to load user:', error);
         // Clear invalid token
@@ -94,10 +100,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Store the JWT token
       localStorage.setItem('viet_baguette_token', data.token);
       
-      // Set the user data
-      setUser(data.user);
+      // The backend returns user data at the top level, not nested under 'user'
+      const userData = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        avatar: data.avatar
+      };
       
-      toast.success(`Welcome back, ${data.user.name}!`);
+      // Set the user data
+      setUser(userData);
+      
+      toast.success(`Welcome back, ${userData.name}!`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Login failed');
       throw error;

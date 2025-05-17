@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Eye, EyeOff } from 'lucide-react';
@@ -133,16 +132,17 @@ const Login = () => {
                   <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md text-sm">
                     <p className="font-medium">Admin Account</p>
                     <p>Email: admin@vietbaguette.co.uk</p>
-                    <p>Password: password</p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md text-sm">
-                    <p className="font-medium">Employee Account</p>
-                    <p>Email: employee@vietbaguette.co.uk</p>
-                    <p>Password: password</p>
+                    <p>Password: admin123!</p>
                   </div>
                 </div>
               </div>
             </form>
+          </div>
+          <div className="text-sm text-gray-500">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-viet-red hover:underline">
+              Register here
+            </Link>
           </div>
         </div>
       </div>
