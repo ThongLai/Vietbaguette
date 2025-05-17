@@ -1,11 +1,12 @@
 import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import apiRoutes from './routes';
+import apiRoutes from './routes/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -82,7 +83,7 @@ app.get('/', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Global error handler:', err);
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({

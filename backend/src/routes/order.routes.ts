@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { RequestHandler } from 'express';
 import { 
   getAllOrders,
   getOrderById,
@@ -6,30 +7,30 @@ import {
   updateOrderStatus,
   updateOrderItemStatus,
   updateOrderPriority
-} from '../controllers/order.controller';
-import { authenticate, allowEitherRole } from '../middleware/auth.middleware';
+} from '../controllers/order.controller.js';
+import { authenticate, allowEitherRole } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
 // Protected routes - require authentication
-router.use(authenticate);
+router.use(authenticate as RequestHandler);
 
 // GET all orders
-router.get('/', allowEitherRole, getAllOrders);
+router.get('/', allowEitherRole as RequestHandler, getAllOrders as RequestHandler);
 
 // GET a single order by ID
-router.get('/:id', allowEitherRole, getOrderById);
+router.get('/:id', allowEitherRole as RequestHandler, getOrderById as RequestHandler);
 
 // POST a new order
-router.post('/', allowEitherRole, createOrder);
+router.post('/', allowEitherRole as RequestHandler, createOrder as RequestHandler);
 
 // PATCH an order status
-router.patch('/:id/status', allowEitherRole, updateOrderStatus);
+router.patch('/:id/status', allowEitherRole as RequestHandler, updateOrderStatus as RequestHandler);
 
 // PATCH an order item status
-router.patch('/:orderId/items/:itemId/status', allowEitherRole, updateOrderItemStatus);
+router.patch('/:orderId/items/:itemId/status', allowEitherRole as RequestHandler, updateOrderItemStatus as RequestHandler);
 
 // PATCH an order to mark urgent or VIP
-router.patch('/:id/priority', allowEitherRole, updateOrderPriority);
+router.patch('/:id/priority', allowEitherRole as RequestHandler, updateOrderPriority as RequestHandler);
 
 export default router; 

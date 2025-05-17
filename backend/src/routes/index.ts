@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import orderRoutes from './order.routes';
-import authRoutes from './auth.routes';
-import scheduleRoutes from './schedule.routes';
-import menuRoutes from './menu.routes';
+import orderRoutes from './order.routes.js';
+import authRoutes from './auth.routes.js';
+import scheduleRoutes from './schedule.routes.js';
+import menuRoutes from './menu.routes.js';
 
 const router = Router();
 
