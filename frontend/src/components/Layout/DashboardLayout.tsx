@@ -1,4 +1,3 @@
-
 import { ReactNode, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Home, LogOut, Menu as MenuIcon, X, Bell, User, Calendar, Settings, Users, Package, BarChart3, Mic, MicOff, Volume2 } from 'lucide-react';
@@ -14,7 +13,7 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user, logout, isOwner } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -77,7 +76,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       {user?.name || "User"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {user?.role === 'owner' ? t('admin.settings') : t('staff.orders')}
+                      {user?.role === 'admin' ? t('admin.settings') : t('staff.orders')}
                     </p>
                   </div>
                 </div>
@@ -110,7 +109,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </Link>
 
                 {/* Admin only links */}
-                {isOwner && (
+                {isAdmin && (
                   <>
                     <Link
                       to="/dashboard/employees"

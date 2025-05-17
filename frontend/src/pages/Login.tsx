@@ -131,13 +131,13 @@ const Login = () => {
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md text-sm">
-                    <p className="font-medium">Owner Account</p>
-                    <p>Email: owner@vietbaguette.co.uk</p>
+                    <p className="font-medium">Admin Account</p>
+                    <p>Email: admin@vietbaguette.co.uk</p>
                     <p>Password: password</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md text-sm">
                     <p className="font-medium">Employee Account</p>
-                    <p>Email: chef@vietbaguette.co.uk</p>
+                    <p>Email: employee@vietbaguette.co.uk</p>
                     <p>Password: password</p>
                   </div>
                 </div>

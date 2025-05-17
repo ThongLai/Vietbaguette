@@ -91,8 +91,8 @@ export const createMenuItem = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    if (req.user.role !== 'OWNER') {
-      return res.status(403).json({ message: 'Only owners can create menu items' });
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Only admins can create menu items' });
     }
     
     // Validate request body
@@ -174,8 +174,8 @@ export const updateMenuItem = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    if (req.user.role !== 'OWNER') {
-      return res.status(403).json({ message: 'Only owners can update menu items' });
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Only admins can update menu items' });
     }
     
     const { id } = req.params;
@@ -285,8 +285,8 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    if (req.user.role !== 'OWNER') {
-      return res.status(403).json({ message: 'Only owners can delete menu items' });
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Only admins can delete menu items' });
     }
     
     const { id } = req.params;

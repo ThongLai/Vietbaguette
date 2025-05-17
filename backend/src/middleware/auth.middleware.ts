@@ -50,26 +50,26 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-// Restrict to owner role
-export const restrictToOwner = (req: Request, res: Response, next: NextFunction) => {
+// Restrict to admin role
+export const restrictToAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'OWNER') {
-    return res.status(403).json({ message: 'Access denied. Owner role required' });
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'Access denied. Admin role required' });
   }
 
   next();
 };
 
-// Allow both owner and employee roles
+// Allow both admin and employee roles
 export const allowEitherRole = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  if (req.user.role !== 'OWNER' && req.user.role !== 'EMPLOYEE') {
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'EMPLOYEE') {
     return res.status(403).json({ message: 'Access denied. Invalid role' });
   }
 

@@ -7,7 +7,7 @@ import {
   updateProfile, 
   changePassword 
 } from '../controllers/auth.controller.js';
-import { authenticate, restrictToOwner } from '../middleware/auth.middleware.js';
+import { authenticate, restrictToAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 

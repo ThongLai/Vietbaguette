@@ -40,7 +40,7 @@ interface ScheduleContextType {
 const mockShifts: Shift[] = [
   {
     id: '1',
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     date: '2025-05-17',
     startTime: '09:00',
     endTime: '17:00',
@@ -71,7 +71,7 @@ const mockTemplates: ShiftTemplate[] = [
   {
     id: '1',
     dayOfWeek: 1, // Monday
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     startTime: '09:00',
     endTime: '17:00',
     role: 'manager',
@@ -79,7 +79,7 @@ const mockTemplates: ShiftTemplate[] = [
   {
     id: '2',
     dayOfWeek: 2, // Tuesday
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     startTime: '09:00',
     endTime: '17:00',
     role: 'manager',
@@ -87,7 +87,7 @@ const mockTemplates: ShiftTemplate[] = [
   {
     id: '3',
     dayOfWeek: 3, // Wednesday
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     startTime: '09:00',
     endTime: '17:00',
     role: 'manager',
@@ -95,7 +95,7 @@ const mockTemplates: ShiftTemplate[] = [
   {
     id: '4',
     dayOfWeek: 4, // Thursday
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     startTime: '09:00',
     endTime: '17:00',
     role: 'manager',
@@ -103,7 +103,7 @@ const mockTemplates: ShiftTemplate[] = [
   {
     id: '5',
     dayOfWeek: 5, // Friday
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     startTime: '09:00',
     endTime: '17:00',
     role: 'manager',
@@ -111,7 +111,7 @@ const mockTemplates: ShiftTemplate[] = [
   {
     id: '6',
     dayOfWeek: 6, // Saturday
-    employeeId: '1', // Owner
+    employeeId: '1', // Admin
     startTime: '09:00',
     endTime: '17:00',
     role: 'manager',

@@ -1,8 +1,7 @@
-
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from 'sonner';
 
-export type UserRole = 'owner' | 'employee';
+export type UserRole = 'admin' | 'employee';
 
 export interface User {
   id: string;
@@ -26,7 +25,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
-  isOwner: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,15 +33,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const mockUsers: User[] = [
   {
     id: '1',
-    name: 'Restaurant Owner',
-    email: 'owner@vietbaguette.co.uk',
-    role: 'owner',
+    name: 'Restaurant Admin',
+    email: 'admin@vietbaguette.co.uk',
+    role: 'admin',
     avatar: '/placeholder.svg',
   },
   {
     id: '2',
-    name: 'Chef Nguyen',
-    email: 'chef@vietbaguette.co.uk',
+    name: 'Employee Nguyen',
+    email: 'employee@vietbaguette.co.uk',
     role: 'employee',
     avatar: '/placeholder.svg',
     availableTime: {
@@ -119,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     logout,
     isAuthenticated: !!user,
-    isOwner: user?.role === 'owner',
+    isAdmin: user?.role === 'admin',
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

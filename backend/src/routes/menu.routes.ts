@@ -7,7 +7,7 @@ import {
   updateMenuItem,
   deleteMenuItem
 } from '../controllers/menu.controller.js';
-import { authenticate, restrictToOwner, allowEitherRole } from '../middleware/auth.middleware.js';
+import { authenticate, restrictToAdmin, allowEitherRole } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -15,9 +15,9 @@ const router = Router();
 router.get('/', getAllMenuItems as RequestHandler);
 router.get('/:id', getMenuItemById as RequestHandler);
 
-// Protected routes - require authentication and owner role
-router.post('/', authenticate as RequestHandler, restrictToOwner as RequestHandler, createMenuItem as RequestHandler);
-router.put('/:id', authenticate as RequestHandler, restrictToOwner as RequestHandler, updateMenuItem as RequestHandler);
-router.delete('/:id', authenticate as RequestHandler, restrictToOwner as RequestHandler, deleteMenuItem as RequestHandler);
+// Protected routes - require authentication and admin role
+router.post('/', authenticate as RequestHandler, restrictToAdmin as RequestHandler, createMenuItem as RequestHandler);
+router.put('/:id', authenticate as RequestHandler, restrictToAdmin as RequestHandler, updateMenuItem as RequestHandler);
+router.delete('/:id', authenticate as RequestHandler, restrictToAdmin as RequestHandler, deleteMenuItem as RequestHandler);
 
 export default router; 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, allowEitherRole, restrictToOwner } from '../middleware/auth.middleware.js';
+import { authenticate, allowEitherRole, restrictToAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -25,18 +25,18 @@ router.get('/range', allowEitherRole as any, (req, res) => {
   });
 });
 
-// POST a new schedule - owner only
-router.post('/', restrictToOwner as any, (req, res) => {
+// POST a new schedule - admin only
+router.post('/', restrictToAdmin as any, (req, res) => {
   res.json({ message: 'POST new schedule - Not implemented yet', body: req.body });
 });
 
-// PUT/update a schedule - owner only
-router.put('/:id', restrictToOwner as any, (req, res) => {
+// PUT/update a schedule - admin only
+router.put('/:id', restrictToAdmin as any, (req, res) => {
   res.json({ message: `PUT update schedule ${req.params.id} - Not implemented yet`, body: req.body });
 });
 
-// DELETE a schedule - owner only
-router.delete('/:id', restrictToOwner as any, (req, res) => {
+// DELETE a schedule - admin only
+router.delete('/:id', restrictToAdmin as any, (req, res) => {
   res.json({ message: `DELETE schedule ${req.params.id} - Not implemented yet` });
 });
 
