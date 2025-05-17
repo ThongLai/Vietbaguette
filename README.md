@@ -17,7 +17,6 @@ A modern, fullstack web application for Viet Baguette restaurant in Halifax, UK.
 vietbaguette-app/
   backend/      # Node.js + Express + Prisma + Socket.IO
   frontend/     # React + TypeScript + Tailwind + Redux + i18next
-  prisma/       # DB schema
   README.md
 ```
 
