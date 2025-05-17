@@ -1,0 +1,18 @@
+{
+  "menu": {
+    "title": "Our Menu",
+    "categories": {
+      "starters": "Starters",
+      "main": "Main Courses",
+      "sides": "Sides",
+      "sauces": "Sauces & Dips",
+      "drinks": "Soft Drinks",
+      "coffee": "Coffee & Tea",
+      "bubble-tea": "Bubble Tea"
+    },
+    "badges": {
+      "vegetarian": "Vegetarian",
+      "spicy": "Spicy"
+    }
+  }
+}
