@@ -42,7 +42,7 @@ const Dashboard = () => {
         <div className="lg:col-span-2">
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>{t('dashboard.welcome')}, {user.name}!</CardTitle>
+              <CardTitle>{t('dashboard.orders.dashboard')}</CardTitle>
               <CardDescription>
                 Here's what's happening at Viet Baguette today
               </CardDescription>
@@ -110,6 +110,8 @@ const Dashboard = () => {
             
             {showSchedule && <ScheduleCalendar />}
           </div>
+
+          {/* Settings Card - Removed since controls are in top navigation */}
         </div>
       </div>
     </DashboardLayout>

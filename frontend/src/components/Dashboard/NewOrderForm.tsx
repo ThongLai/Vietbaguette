@@ -18,14 +18,23 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ShoppingCart, Plus, Minus, Trash2, Check, Leaf } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { normalizeCategory } from '@/lib/menu-utils';
 
+// Update CartItem interface to match new data structure
 interface CartItem {
   menuItem: MenuItem;
   quantity: number;
   options: {
-    name: string;
-    choice: string;
-    extraPrice?: number;
+    menuOption: {
+      id: string;
+      name: string;
+    };
+    optionChoice: {
+      id: string;
+      name: string;
+      price?: number;
+    };
   }[];
   notes?: string;
 }
@@ -127,135 +136,157 @@ const CartItemComponent = ({
   // Calculate total price for this item
   const basePrice = item.menuItem.price * item.quantity;
   const optionsPrice = item.options.reduce((total, opt) => 
-    total + (opt.extraPrice || 0) * item.quantity, 0);
+    total + (opt.optionChoice.price || 0) * item.quantity, 0);
   const totalPrice = basePrice + optionsPrice;
 
   return (
-    <div className="border rounded-md p-3 mb-3">
-      <div className="flex justify-between items-start">
-        <div>
-          <h4 className="font-medium">{item.menuItem.name}</h4>
-          <p className="text-sm text-muted-foreground">
-            £{item.menuItem.price.toFixed(2)} each
-          </p>
-        </div>
-        <div className="flex items-center">
-          <Button 
-            variant="outline" 
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onUpdateQuantity(Math.max(1, item.quantity - 1))}
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-          <span className="mx-2 font-medium">{item.quantity}</span>
-          <Button 
-            variant="outline" 
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onUpdateQuantity(item.quantity + 1)}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {item.options.length > 0 && (
-        <div className="mt-2">
-          <p className="text-sm font-medium">Selected Options:</p>
-          <ul className="text-sm text-muted-foreground">
-            {item.options.map((option, idx) => (
-              <li key={idx} className="flex justify-between">
-                <span>{option.name}: {option.choice}</span>
-                {option.extraPrice ? <span>+£{option.extraPrice.toFixed(2)}</span> : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {item.notes && (
-        <div className="mt-2">
-          <p className="text-sm font-medium">Notes:</p>
-          <p className="text-sm text-muted-foreground italic">{item.notes}</p>
-        </div>
-      )}
-
-      <div className="mt-3 flex justify-between items-center">
-        <p className="font-medium">
-          Total: £{totalPrice.toFixed(2)}
-        </p>
-        
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowOptions(!showOptions)}
-          >
-            {showOptions ? 'Hide Options' : 'Options'}
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={onRemove}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {showOptions && (
-        <div className="mt-3 pt-3 border-t">
-          {/* Options selectors */}
-          {item.menuItem.options && item.menuItem.options.length > 0 && (
-            <div className="space-y-3">
-              {item.menuItem.options.map((option) => (
-                <div key={option.name} className="grid gap-2">
-                  <Label htmlFor={`option-${option.name}`}>{option.name}</Label>
-                  <Select
-                    value={item.options.find(o => o.name === option.name)?.choice || ''}
-                    onValueChange={(value) => {
-                      const choice = option.choices.find(c => c.name === value);
-                      onUpdateOptions(option.name, value, choice?.price);
-                    }}
-                  >
-                    <SelectTrigger id={`option-${option.name}`}>
-                      <SelectValue placeholder={`Select ${option.name}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {option.choices.map((choice) => (
-                        <SelectItem key={choice.name} value={choice.name}>
-                          {choice.name}
-                          {choice.price ? ` (+£${choice.price.toFixed(2)})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+    <Card className="relative group">
+      <CardContent className="p-4">
+        {/* Main item info */}
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-grow">
+            <div className="flex items-start justify-between">
+              <div>
+                <h4 className="font-medium text-base">{item.menuItem.name}</h4>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-sm text-muted-foreground">
+                    £{item.menuItem.price.toFixed(2)} each
+                  </p>
+                  {optionsPrice > 0 && (
+                    <>
+                      <span className="text-muted-foreground">•</span>
+                      <p className="text-sm text-muted-foreground">
+                        +£{(optionsPrice / item.quantity).toFixed(2)} in options
+                      </p>
+                    </>
+                  )}
                 </div>
-              ))}
+              </div>
             </div>
-          )}
 
-          {/* Notes */}
-          <div className="mt-3">
-            <Label htmlFor="notes">Special Instructions</Label>
-            <Textarea
-              id="notes"
-              placeholder="Any special requests?"
-              value={item.notes || ''}
-              onChange={(e) => onUpdateNotes(e.target.value)}
-              className="mt-1"
-            />
+            {/* Options summary - only show when not expanded */}
+            {!showOptions && item.options.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm text-muted-foreground line-clamp-1">
+                  {item.options.map(opt => opt.optionChoice.name).join(', ')}
+                </p>
+              </div>
+            )}
+
+            {/* Notes preview - only show when not expanded */}
+            {!showOptions && item.notes && (
+              <div className="mt-1">
+                <p className="text-sm text-muted-foreground italic line-clamp-1">
+                  Note: {item.notes}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Quantity controls */}
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onUpdateQuantity(Math.max(1, item.quantity - 1))}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="w-8 text-center font-medium">{item.quantity}</span>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onUpdateQuantity(item.quantity + 1)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Options and Notes when expanded */}
+        {showOptions && (
+          <div className="mt-4 pt-4 border-t space-y-4">
+            {/* Options selectors */}
+            {item.menuItem.options && item.menuItem.options.length > 0 && (
+              <div className="space-y-3">
+                {item.menuItem.options.map((option) => (
+                  <div key={option.name} className="grid gap-1.5">
+                    <Label htmlFor={`option-${option.name}`}>{option.name}</Label>
+                    <Select
+                      value={item.options.find(o => o.menuOption.id === option.id)?.optionChoice.id || ''}
+                      onValueChange={(value) => {
+                        const choice = option.choices.find(c => c.id === value);
+                        onUpdateOptions(option.id, value, choice?.price);
+                      }}
+                    >
+                      <SelectTrigger id={`option-${option.name}`}>
+                        <SelectValue placeholder={`Select ${option.name}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {option.choices.map((choice) => (
+                          <SelectItem key={choice.id} value={choice.id}>
+                            {choice.name}
+                            {choice.price ? ` (+£${choice.price.toFixed(2)})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="notes">Special Instructions</Label>
+              <Textarea
+                id="notes"
+                placeholder="Any special requests?"
+                value={item.notes || ''}
+                onChange={(e) => onUpdateNotes(e.target.value)}
+                className="resize-none"
+                rows={2}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Footer with total and actions */}
+        <div className="mt-4 pt-4 border-t flex justify-between items-center">
+          <p className="font-medium flex items-baseline gap-2">
+            <span className="text-sm text-muted-foreground">Total:</span>
+            <span className="text-base">£{totalPrice.toFixed(2)}</span>
+          </p>
+          
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 px-3 hover:bg-muted"
+              onClick={() => setShowOptions(!showOptions)}
+            >
+              {showOptions ? 'Done' : 'Customize'}
+            </Button>
+            
+            <Button 
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={onRemove}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
 const NewOrderForm = () => {
-  const { menu, addOrder } = useOrders();
+  const { menu, isMenuLoading, addOrder } = useOrders();
   const { user } = useAuth();
   const { toast } = useToast();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -263,9 +294,10 @@ const NewOrderForm = () => {
   const [customerName, setCustomerName] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   // Group menu items by category
-  const categories = [...new Set(menu.map(item => item.category))];
+  // normalizeCategory is already imported at the top
+
+  const categories = [...new Set(menu.map(item => item.category))].sort();
   const menuByCategory: Record<string, MenuItem[]> = {};
   
   categories.forEach(category => {
@@ -275,9 +307,15 @@ const NewOrderForm = () => {
   const handleAddToCart = (menuItem: MenuItem) => {
     // Create default options if the menu item has options
     const defaultOptions = menuItem.options ? menuItem.options.map(option => ({
-      name: option.name,
-      choice: option.choices[0].name,
-      extraPrice: option.choices[0].price,
+      menuOption: {
+        id: option.id,
+        name: option.name,
+      },
+      optionChoice: {
+        id: option.choices[0].id,
+        name: option.choices[0].name,
+        price: option.choices[0].price,
+      },
     })) : [];
 
     setCart([...cart, {
@@ -305,26 +343,46 @@ const NewOrderForm = () => {
     setCart(updatedCart);
   };
 
-  const handleUpdateOptions = (index: number, optionName: string, choice: string, price?: number) => {
+  const handleUpdateOptions = (index: number, menuOptionId: string, optionChoiceId: string) => {
     const updatedCart = [...cart];
     const currentItem = updatedCart[index];
+    const menuItem = currentItem.menuItem;
+    
+    // Find the menu option and choice
+    const menuOption = menuItem.options?.find(opt => opt.id === menuOptionId);
+    if (!menuOption) return;
+    
+    const optionChoice = menuOption.choices.find(choice => choice.id === optionChoiceId);
+    if (!optionChoice) return;
     
     // Find if this option already exists
-    const optionIndex = currentItem.options.findIndex(opt => opt.name === optionName);
+    const optionIndex = currentItem.options.findIndex(opt => opt.menuOption.id === menuOptionId);
     
     if (optionIndex >= 0) {
       // Update existing option
       currentItem.options[optionIndex] = {
-        name: optionName,
-        choice,
-        extraPrice: price,
+        menuOption: {
+          id: menuOption.id,
+          name: menuOption.name,
+        },
+        optionChoice: {
+          id: optionChoice.id,
+          name: optionChoice.name,
+          price: optionChoice.price,
+        },
       };
     } else {
       // Add new option
       currentItem.options.push({
-        name: optionName,
-        choice,
-        extraPrice: price,
+        menuOption: {
+          id: menuOption.id,
+          name: menuOption.name,
+        },
+        optionChoice: {
+          id: optionChoice.id,
+          name: optionChoice.name,
+          price: optionChoice.price,
+        },
       });
     }
     
@@ -341,7 +399,7 @@ const NewOrderForm = () => {
     return cart.reduce((total, item) => {
       const basePrice = item.menuItem.price * item.quantity;
       const optionsPrice = item.options.reduce((sum, opt) => 
-        sum + (opt.extraPrice || 0) * item.quantity, 0);
+        sum + (opt.optionChoice.price || 0) * item.quantity, 0);
       return total + basePrice + optionsPrice;
     }, 0);
   };
@@ -359,33 +417,37 @@ const NewOrderForm = () => {
     try {
       setIsSubmitting(true);
 
-      // Prepare order data
+      // Calculate total for the order
+      const total = cart.reduce((sum, item) => {
+        const basePrice = item.menuItem.price * item.quantity;
+        const optionsPrice = item.options.reduce((optSum, opt) => 
+          optSum + (opt.optionChoice.price || 0) * item.quantity, 0);
+        return sum + basePrice + optionsPrice;
+      }, 0);
+
+      // Format order data according to the database schema
       const orderData = {
         items: cart.map(item => ({
-          id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
-          menuItem: item.menuItem,
+          menuItemId: item.menuItem.id,
           quantity: item.quantity,
           notes: item.notes || '',
-          options: item.options,
-          status: 'pending' as const,
+          selectedOptions: item.options.map(opt => ({
+            menuOptionId: opt.menuOption.id,
+            optionChoiceId: opt.optionChoice.id,
+          })),
         })),
         tableNumber: tableNumber ? parseInt(tableNumber) : undefined,
         customerName: customerName || undefined,
-        total: calculateTotal(),
+        total, // Add the calculated total
       };
 
-      // Add the order
+      // Add the order using the context function
       await addOrder(orderData);
 
       // Reset form
       setCart([]);
       setTableNumber('');
       setCustomerName('');
-
-      toast({
-        title: "Order Placed",
-        description: "Your order has been successfully placed.",
-      });
     } catch (error) {
       console.error('Error submitting order:', error);
       toast({
@@ -401,56 +463,86 @@ const NewOrderForm = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Menu Section */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Menu</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-              <ScrollArea className="w-full">
-                <TabsList className="w-full justify-start mb-4">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  {categories.map((category) => (
-                    <TabsTrigger key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </ScrollArea>
+            {isMenuLoading ? (
+              <div className="space-y-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-4">
+                    <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[1, 2, 3].map((j) => (
+                        <div key={j} className="h-[280px] bg-muted animate-pulse rounded-lg" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                <div className="mb-6 border-b">
+                  <ScrollArea className="w-full pb-2">
+                    <TabsList className="w-full h-auto justify-start inline-flex space-x-2 bg-transparent p-0">
+                      <TabsTrigger
+                        value="all"
+                        className="rounded-full px-4 py-2 data-[state=active]:bg-primary"
+                      >
+                        All
+                      </TabsTrigger>
+                      {categories.map((category) => (
+                        <TabsTrigger
+                          key={category}
+                          value={category}
+                          className="rounded-full px-4 py-2 data-[state=active]:bg-primary whitespace-nowrap"
+                        >
+                          {normalizeCategory(category)}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </ScrollArea>
+                </div>
 
-              <TabsContent value="all">
-                <ScrollArea className="h-[calc(100vh-300px)]">
-                  {categories.map((category) => (
-                    <CategorySection
-                      key={category}
-                      title={category.charAt(0).toUpperCase() + category.slice(1)}
-                      items={menuByCategory[category]}
-                      onAddToCart={handleAddToCart}
-                    />
-                  ))}
-                </ScrollArea>
-              </TabsContent>
-
-              {categories.map((category) => (
-                <TabsContent key={category} value={category}>
+                <TabsContent value="all" className="mt-0">
                   <ScrollArea className="h-[calc(100vh-300px)]">
-                    <CategorySection
-                      title={category.charAt(0).toUpperCase() + category.slice(1)}
-                      items={menuByCategory[category]}
-                      onAddToCart={handleAddToCart}
-                    />
+                    <div className="space-y-8 p-1">
+                      {categories.map((category) => (
+                        <CategorySection
+                          key={category}
+                          title={normalizeCategory(category)}
+                          items={menuByCategory[category]}
+                          onAddToCart={handleAddToCart}
+                        />
+                      ))}
+                    </div>
                   </ScrollArea>
                 </TabsContent>
-              ))}
-            </Tabs>
+
+                {categories.map((category) => (
+                  <TabsContent key={category} value={category} className="mt-0">
+                    <ScrollArea className="h-[calc(100vh-300px)]">
+                      <div className="p-1">
+                        <CategorySection
+                          title={normalizeCategory(category)}
+                          items={menuByCategory[category]}
+                          onAddToCart={handleAddToCart}
+                        />
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Order Summary Section */}
-      <div>
-        <Card>
+      <div className="space-y-6">
+        <Card className="sticky top-6">
           <CardHeader>
             <CardTitle className="flex items-center">
               <ShoppingCart className="mr-2 h-5 w-5" />
@@ -458,50 +550,61 @@ const NewOrderForm = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {/* Customer Info */}
-              <div className="grid gap-2">
-                <Label htmlFor="tableNumber">Table Number (optional)</Label>
-                <Input
-                  id="tableNumber"
-                  type="number"
-                  value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
-                  placeholder="Enter table number"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="customerName">Customer Name (optional)</Label>
-                <Input
-                  id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Enter customer name"
-                />
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="tableNumber">Table Number (optional)</Label>
+                  <Input
+                    id="tableNumber"
+                    type="number"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                    placeholder="Enter table number"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="customerName">Customer Name (optional)</Label>
+                  <Input
+                    id="customerName"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Enter customer name"
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
 
               {/* Cart Items */}
-              <div className="mt-6">
+              <div>
                 <h3 className="font-semibold mb-3">Items ({cart.length})</h3>
                 
                 {cart.length === 0 ? (
-                  <p className="text-center py-6 text-muted-foreground">
-                    No items added yet
-                  </p>
+                  <div className="text-center py-6 text-muted-foreground border rounded-md">
+                    <p>No items added yet</p>
+                    <p className="text-sm mt-1">Select items from the menu to add them to your order</p>
+                  </div>
                 ) : (
                   <ScrollArea className="h-[calc(100vh-500px)]">
-                    {cart.map((item, index) => (
-                      <CartItemComponent
-                        key={index}
-                        item={item}
-                        onUpdateQuantity={(quantity) => handleUpdateQuantity(index, quantity)}
-                        onRemove={() => handleRemoveItem(index)}
-                        onUpdateOptions={(optionName, choice, price) => 
-                          handleUpdateOptions(index, optionName, choice, price)
-                        }
-                        onUpdateNotes={(notes) => handleUpdateNotes(index, notes)}
-                      />
-                    ))}
+                    <div className="space-y-4 pr-4">
+                      {cart.map((item, index) => (
+                        <CartItemComponent
+                          key={index}
+                          item={item}
+                          onUpdateQuantity={(quantity) => handleUpdateQuantity(index, quantity)}
+                          onRemove={() => handleRemoveItem(index)}
+                          onUpdateOptions={(optionName, choice, price) => {
+                            const menuOption = item.menuItem.options?.find(opt => opt.name === optionName);
+                            if (!menuOption) return;
+                            const optionChoice = menuOption.choices.find(c => c.name === choice);
+                            if (!optionChoice) return;
+                            handleUpdateOptions(index, menuOption.id, optionChoice.id);
+                          }}
+                          onUpdateNotes={(notes) => handleUpdateNotes(index, notes)}
+                        />
+                      ))}
+                    </div>
                   </ScrollArea>
                 )}
               </div>
@@ -513,7 +616,7 @@ const NewOrderForm = () => {
               <span>£{calculateTotal().toFixed(2)}</span>
             </div>
             <Button 
-              className="w-full" 
+              className="w-full font-semibold"
               size="lg"
               disabled={cart.length === 0 || isSubmitting}
               onClick={handleSubmitOrder}
@@ -537,4 +640,12 @@ const NewOrderForm = () => {
   );
 };
 
-export default NewOrderForm; 
+const NewOrderFormContainer = () => {
+  return (
+    <ErrorBoundary>
+      <NewOrderForm />
+    </ErrorBoundary>
+  );
+};
+
+export default NewOrderFormContainer;

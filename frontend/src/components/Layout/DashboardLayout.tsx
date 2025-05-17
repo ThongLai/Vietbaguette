@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCommunication } from '@/contexts/CommunicationContext';
 import { cn } from '@/lib/utils';
+import LanguageSwitcher from '@/components/Settings/LanguageSwitcher';
+import ThemeSwitcher from '@/components/Settings/ThemeSwitcher';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -89,7 +91,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <Home className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
-                  {t('dashboard.welcome')}
+                  {t('dashboard.orders.dashboard')}
                 </Link>
 
                 <Link
@@ -194,18 +196,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <MenuIcon className="h-5 w-5" />
               </button>
               <h1 className="ml-4 lg:ml-0 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {t('dashboard.welcome')}, {user?.name}
+                {t('dashboard.welcome')}, {user?.name}!
               </h1>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
               {isMicActive && (
-                <div className="mr-4 flex items-center">
+                <div className="flex items-center">
                   <Volume2 className="mr-1 h-4 w-4 text-viet-red animate-pulse" />
                   <span className="text-sm text-viet-red font-medium">
                     Live
                   </span>
                 </div>
               )}
+              <ThemeSwitcher className="w-auto" />
+              <LanguageSwitcher className="w-auto" />
               <Link to="/dashboard/notifications">
                 <Button variant="ghost" size="icon">
                   <Bell className="h-5 w-5" />

@@ -35,7 +35,8 @@ const translations = {
     'menu.categories.desserts': 'Desserts',
     
     // Dashboard
-    'dashboard.welcome': 'Welcome back',
+    'dashboard.welcome': 'Welcome Back',
+    'dashboard.orders.dashboard': 'Dashboard',
     'dashboard.orders.title': 'Orders',
     'dashboard.orders.new': 'New Order',
     'dashboard.orders.active': 'Active Orders',
@@ -110,6 +111,7 @@ const translations = {
     
     // Dashboard
     'dashboard.welcome': 'Chào mừng trở lại',
+    'dashboard.orders.dashboard': 'Bảng điều khiển',
     'dashboard.orders.title': 'Đơn hàng',
     'dashboard.orders.new': 'Đơn hàng mới',
     'dashboard.orders.active': 'Đơn hàng đang xử lý',

@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Set the user data
       setUser(userData);
       
-      toast.success(`Welcome back, ${userData.name}!`);
+      toast.success(`{Welcome back}, ${userData.name}!`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Login failed');
       throw error;

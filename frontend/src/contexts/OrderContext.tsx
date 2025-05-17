@@ -1,4 +1,3 @@
-
 import { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -12,8 +11,10 @@ export interface MenuItem {
   category: string;
   vegetarian?: boolean;
   options?: {
+    id: string;
     name: string;
     choices: {
+      id: string;
       name: string;
       price?: number;
     }[];
@@ -25,414 +26,309 @@ export interface OrderItem {
   menuItem: MenuItem;
   quantity: number;
   options?: {
-    name: string;
-    choice: string;
-    extraPrice?: number;
+    menuOption: {
+      id: string;
+      name: string;
+    };
+    optionChoice: {
+      id: string;
+      name: string;
+      price?: number;
+    };
   }[];
   notes?: string;
-  status: 'pending' | 'preparing' | 'completed' | 'cancelled';
+  status: 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
 }
 
 export interface Order {
   id: string;
   items: OrderItem[];
   total: number;
-  status: 'pending' | 'preparing' | 'completed' | 'cancelled';
-  timestamp: string;
+  status: 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
+  createdAt: string;
   tableNumber?: number;
   customerName?: string;
   isUrgent?: boolean;
   isVIP?: boolean;
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 interface OrderContextType {
   menu: MenuItem[];
+  isMenuLoading: boolean;
   activeOrders: Order[];
   completedOrders: Order[];
-  addOrder: (order: Omit<Order, 'id' | 'timestamp' | 'status'>) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  updateItemStatus: (orderId: string, itemId: string, status: OrderItem['status']) => void;
-  modifyOrderItem: (orderId: string, itemId: string, updates: Partial<OrderItem>) => void;
-  markOrderUrgent: (orderId: string, isUrgent: boolean) => void;
-  markOrderVIP: (orderId: string, isVIP: boolean) => void;
-  cancelOrder: (orderId: string) => void;
+  addOrder: (orderData: { 
+    items: { 
+      menuItemId: string; 
+      quantity: number; 
+      notes?: string;
+      selectedOptions?: { 
+        menuOptionId: string; 
+        optionChoiceId: string;
+      }[];
+    }[];
+    tableNumber?: number;
+    customerName?: string;
+  }) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  updateItemStatus: (orderId: string, itemId: string, status: OrderItem['status']) => Promise<void>;
+  markOrderUrgent: (orderId: string, isUrgent: boolean) => Promise<void>;
+  markOrderVIP: (orderId: string, isVIP: boolean) => Promise<void>;
 }
-
-// Mock menu data
-const mockMenu: MenuItem[] = [
-  {
-    id: '1',
-    name: 'Spring Rolls',
-    namevi: 'Chả Giò',
-    price: 5.00,
-    description: '3 spring rolls with vegetables, vermicelli herbs, served with sweet chili dip',
-    image: '/placeholder.svg',
-    category: 'starters',
-    vegetarian: false,
-  },
-  {
-    id: '2',
-    name: 'Pho',
-    namevi: 'Phở',
-    price: 8.00,
-    description: 'Aromatic Vietnamese soup with broth, rice noodles, bean sprouts, herbs, and your choice of protein',
-    image: '/placeholder.svg',
-    category: 'main',
-    vegetarian: false,
-    options: [
-      {
-        name: 'Protein',
-        choices: [
-          { name: 'Beef' },
-          { name: 'Chicken' },
-          { name: 'Prawn' },
-          { name: 'Tofu', price: 0 },
-        ],
-      },
-      {
-        name: 'Extra',
-        choices: [
-          { name: 'Poached egg', price: 2 },
-          { name: 'Beef', price: 2 },
-        ],
-      },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Baguette',
-    namevi: 'Bánh Mì',
-    price: 7.00,
-    description: 'A unique homemade baguette filled with salad, pickles, herbs and your choice of protein',
-    image: '/placeholder.svg',
-    category: 'main',
-    vegetarian: false,
-    options: [
-      {
-        name: 'Protein',
-        choices: [
-          { name: 'Grilled pork with pate' },
-          { name: 'Chicken' },
-          { name: 'Beef' },
-          { name: 'Fried egg/tofu' },
-        ],
-      },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Vietnamese Curry',
-    namevi: 'Cà Ri',
-    price: 7.50,
-    description: 'Rich and aromatic curry with your choice of protein',
-    image: '/placeholder.svg',
-    category: 'main',
-    vegetarian: false,
-    options: [
-      {
-        name: 'Protein',
-        choices: [
-          { name: 'Chicken breast' },
-          { name: 'Beef' },
-          { name: 'Prawn', price: 1 },
-          { name: 'Tofu' },
-        ],
-      },
-    ],
-  },
-  {
-    id: '5',
-    name: 'Vietnamese Coffee',
-    namevi: 'Cà Phê',
-    price: 3.00,
-    description: 'Slow-brewed Vietnamese dripping coffee with rich bold flavors and a smooth, aromatic finish',
-    image: '/placeholder.svg',
-    category: 'drinks',
-    vegetarian: true,
-  },
-  {
-    id: '6',
-    name: 'Bubble Tea',
-    namevi: 'Trà Sữa',
-    price: 4.50,
-    description: 'Flavoured milk powder, syrup, milk, jasmine tea and toppings',
-    image: '/placeholder.svg',
-    category: 'drinks',
-    vegetarian: true,
-    options: [
-      {
-        name: 'Flavor',
-        choices: [
-          { name: 'Strawberry' },
-          { name: 'Mango' },
-          { name: 'Chocolate' },
-          { name: 'Taro' },
-          { name: 'Matcha' },
-          { name: 'Original' },
-          { name: 'Brown Sugar' },
-        ],
-      },
-      {
-        name: 'Tapioca',
-        choices: [
-          { name: 'Original' },
-          { name: 'Brown Sugar' },
-          { name: 'None' },
-        ],
-      },
-      {
-        name: 'Ice Level',
-        choices: [
-          { name: '25%' },
-          { name: '50%' },
-          { name: '75%' },
-          { name: '100%' },
-        ],
-      },
-    ],
-  },
-];
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-  const [menu, setMenu] = useState<MenuItem[]>(mockMenu);
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [isMenuLoading, setIsMenuLoading] = useState(true);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
 
-  // Load orders from localStorage on component mount
+  // Fetch menu on mount
   useEffect(() => {
-    const storedActiveOrders = localStorage.getItem('viet_baguette_active_orders');
-    const storedCompletedOrders = localStorage.getItem('viet_baguette_completed_orders');
-    
-    if (storedActiveOrders) {
-      try {
-        setActiveOrders(JSON.parse(storedActiveOrders));
-      } catch (e) {
-        console.error('Failed to parse stored active orders', e);
-      }
-    }
-    
-    if (storedCompletedOrders) {
-      try {
-        setCompletedOrders(JSON.parse(storedCompletedOrders));
-      } catch (e) {
-        console.error('Failed to parse stored completed orders', e);
-      }
-    }
+    fetchMenu();
   }, []);
 
-  // Save orders to localStorage when they change
+  // Fetch orders periodically
   useEffect(() => {
-    localStorage.setItem('viet_baguette_active_orders', JSON.stringify(activeOrders));
-  }, [activeOrders]);
-  
-  useEffect(() => {
-    localStorage.setItem('viet_baguette_completed_orders', JSON.stringify(completedOrders));
-  }, [completedOrders]);
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
-  const addOrder = (orderData: Omit<Order, 'id' | 'timestamp' | 'status'>) => {
-    const newOrder: Order = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      status: 'pending',
-      ...orderData,
-    };
-    
-    setActiveOrders(prev => [newOrder, ...prev]);
-    
-    // Show a notification
-    toast.success('New order added!', {
-      description: `Order #${newOrder.id.slice(-4)} with ${newOrder.items.length} items`,
-      action: {
-        label: 'View',
-        onClick: () => {
-          // In a real app, this would navigate to the order details
-          console.log('View order', newOrder);
+  const fetchMenu = async () => {
+    try {
+      setIsMenuLoading(true);
+      const response = await fetch('/api/menu');
+      if (!response.ok) throw new Error('Failed to fetch menu');
+      const data = await response.json();
+      setMenu(data);
+    } catch (error) {
+      console.error('Error fetching menu:', error);
+      toast.error('Failed to load menu items');
+    } finally {
+      setIsMenuLoading(false);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      // Fetch active orders (pending and preparing)
+      const activeResponse = await fetch('/api/orders?status=active');
+      if (!activeResponse.ok) throw new Error('Failed to fetch active orders');
+      const activeData = await activeResponse.json();
+      setActiveOrders(activeData);
+
+      // Fetch completed orders
+      const completedResponse = await fetch('/api/orders?status=completed');
+      if (!completedResponse.ok) throw new Error('Failed to fetch completed orders');
+      const completedData = await completedResponse.json();
+      setCompletedOrders(completedData);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to load orders');
+    }
+  };
+
+  const addOrder = async (orderData: {
+    items: {
+      menuItemId: string;
+      quantity: number;
+      notes?: string;
+      selectedOptions?: {
+        menuOptionId: string;
+        optionChoiceId: string;
+      }[];
+    }[];
+    tableNumber?: number;
+    customerName?: string;
+  }) => {
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      },
-    });
-    
-    // Play a notification sound
-    const audio = new Audio('/notification.mp3');
-    audio.play().catch(e => console.error('Failed to play notification sound', e));
-  };
-
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setActiveOrders(prev => {
-      const updatedOrders = prev.map(order => {
-        if (order.id === orderId) {
-          return { ...order, status };
-        }
-        return order;
+        body: JSON.stringify(orderData),
       });
-      
-      // If the order is completed, move it to completedOrders
-      if (status === 'completed' || status === 'cancelled') {
-        const orderToMove = prev.find(order => order.id === orderId);
-        if (orderToMove) {
-          setCompletedOrders(prevCompleted => [
-            { ...orderToMove, status },
-            ...prevCompleted,
-          ]);
-        }
-        return updatedOrders.filter(order => order.id !== orderId);
-      }
-      
-      return updatedOrders;
-    });
 
-    toast.info(`Order status updated to ${status}`);
-  };
+      if (!response.ok) throw new Error('Failed to create order');
 
-  const updateItemStatus = (orderId: string, itemId: string, status: OrderItem['status']) => {
-    setActiveOrders(prev => {
-      const updatedOrders = prev.map(order => {
-        if (order.id === orderId) {
-          const updatedItems = order.items.map(item => {
-            if (item.id === itemId) {
-              return { ...item, status };
-            }
-            return item;
-          });
-          
-          // Check if all items are completed to update order status
-          const allCompleted = updatedItems.every(item => item.status === 'completed');
-          
-          return { 
-            ...order, 
-            items: updatedItems,
-            status: allCompleted ? 'completed' : order.status 
-          };
-        }
-        return order;
+      const newOrder = await response.json();
+      setActiveOrders(prev => [newOrder, ...prev]);
+
+      toast.success('Order placed successfully!', {
+        description: `Order #${newOrder.id.substring(0, 8)} has been created`,
       });
-      
-      // Move completed orders
-      const orderToCheck = updatedOrders.find(order => order.id === orderId);
-      if (orderToCheck && orderToCheck.items.every(item => item.status === 'completed')) {
-        setCompletedOrders(prevCompleted => [
-          { ...orderToCheck, status: 'completed' },
-          ...prevCompleted,
-        ]);
-        return updatedOrders.filter(order => order.id !== orderId);
-      }
-      
-      return updatedOrders;
-    });
 
-    toast.info(`Item status updated to ${status}`);
-  };
-
-  const modifyOrderItem = (orderId: string, itemId: string, updates: Partial<OrderItem>) => {
-    setActiveOrders(prev => {
-      return prev.map(order => {
-        if (order.id === orderId) {
-          const updatedItems = order.items.map(item => {
-            if (item.id === itemId) {
-              return { ...item, ...updates };
-            }
-            return item;
-          });
-          
-          // Recalculate total
-          const newTotal = updatedItems.reduce((sum, item) => {
-            let itemTotal = item.menuItem.price * item.quantity;
-            
-            // Add any option extra prices
-            if (item.options) {
-              itemTotal += item.options.reduce(
-                (optionSum, option) => optionSum + (option.extraPrice || 0),
-                0
-              ) * item.quantity;
-            }
-            
-            return sum + itemTotal;
-          }, 0);
-          
-          return { 
-            ...order, 
-            items: updatedItems,
-            total: newTotal
-          };
-        }
-        return order;
-      });
-    });
-
-    toast.info('Order modified', {
-      description: 'The order has been updated',
-    });
-  };
-
-  const markOrderUrgent = (orderId: string, isUrgent: boolean) => {
-    setActiveOrders(prev => {
-      return prev.map(order => {
-        if (order.id === orderId) {
-          return { ...order, isUrgent };
-        }
-        return order;
-      });
-    });
-
-    if (isUrgent) {
-      toast.warning('Order marked as urgent!', {
-        description: `Order #${orderId.slice(-4)} needs to be prepared quickly!`,
-      });
-    } else {
-      toast.info('Order is no longer urgent');
+      // Play notification sound
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(e => console.error('Failed to play notification sound', e));
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error('Failed to create order');
+      throw error; // Re-throw to handle in the component
     }
   };
 
-  const markOrderVIP = (orderId: string, isVIP: boolean) => {
-    setActiveOrders(prev => {
-      return prev.map(order => {
-        if (order.id === orderId) {
-          return { ...order, isVIP };
-        }
-        return order;
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
       });
-    });
 
-    if (isVIP) {
-      toast.info('Order marked as VIP', {
-        description: 'This order is for a VIP customer',
-      });
-    } else {
-      toast.info('Order is no longer marked as VIP');
+      if (!response.ok) throw new Error('Failed to update order status');
+
+      // Handle completed/cancelled orders
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
+        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
+        const order = activeOrders.find(o => o.id === orderId);
+        if (order) {
+          setCompletedOrders(prev => [{ ...order, status }, ...prev]);
+        }
+      } else {
+        setActiveOrders(prev =>
+          prev.map(order =>
+            order.id === orderId ? { ...order, status } : order
+          )
+        );
+      }
+
+      toast.success(`Order status updated to ${status.toLowerCase()}`);
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      toast.error('Failed to update order status');
     }
   };
 
-  const cancelOrder = (orderId: string) => {
-    setActiveOrders(prev => {
-      const orderToCancel = prev.find(order => order.id === orderId);
-      
-      if (orderToCancel) {
-        setCompletedOrders(prevCompleted => [
-          { ...orderToCancel, status: 'cancelled' },
-          ...prevCompleted,
-        ]);
-      }
-      
-      return prev.filter(order => order.id !== orderId);
-    });
+  const updateItemStatus = async (orderId: string, itemId: string, status: OrderItem['status']) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/items/${itemId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
 
-    toast.error('Order cancelled');
+      if (!response.ok) throw new Error('Failed to update item status');
+
+      const { item, order } = await response.json();
+
+      setActiveOrders(prev => {
+        const updatedOrders = prev.map(o => {
+          if (o.id === orderId) {
+            return {
+              ...o,
+              items: o.items.map(i => (i.id === itemId ? item : i)),
+              ...(order ? { status: order.status } : {}),
+            };
+          }
+          return o;
+        });
+
+        // If order status changed to completed, move it
+        if (order?.status === 'COMPLETED') {
+          const completedOrder = updatedOrders.find(o => o.id === orderId);
+          if (completedOrder) {
+            setCompletedOrders(prev => [completedOrder, ...prev]);
+          }
+          return updatedOrders.filter(o => o.id !== orderId);
+        }
+
+        return updatedOrders;
+      });
+
+      toast.success(`Item status updated to ${status.toLowerCase()}`);
+    } catch (error) {
+      console.error('Error updating item status:', error);
+      toast.error('Failed to update item status');
+    }
+  };
+
+  const markOrderUrgent = async (orderId: string, isUrgent: boolean) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/priority`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isUrgent }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update order priority');
+
+      setActiveOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, isUrgent } : order
+        )
+      );
+
+      if (isUrgent) {
+        toast.warning('Order marked as urgent!', {
+          description: `Order #${orderId.substring(0, 8)} needs immediate attention`,
+        });
+      } else {
+        toast.info('Order is no longer urgent');
+      }
+    } catch (error) {
+      console.error('Error updating order priority:', error);
+      toast.error('Failed to update order priority');
+    }
+  };
+
+  const markOrderVIP = async (orderId: string, isVIP: boolean) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/priority`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isVIP }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update order priority');
+
+      setActiveOrders(prev =>
+        prev.map(order =>
+          order.id === orderId ? { ...order, isVIP } : order
+        )
+      );
+
+      if (isVIP) {
+        toast.info('Order marked as VIP', {
+          description: 'This order will receive priority treatment',
+        });
+      } else {
+        toast.info('Order is no longer marked as VIP');
+      }
+    } catch (error) {
+      console.error('Error updating order priority:', error);
+      toast.error('Failed to update order priority');
+    }
   };
 
   return (
     <OrderContext.Provider
       value={{
         menu,
+        isMenuLoading,
         activeOrders,
         completedOrders,
         addOrder,
         updateOrderStatus,
         updateItemStatus,
-        modifyOrderItem,
         markOrderUrgent,
         markOrderVIP,
-        cancelOrder,
       }}
     >
       {children}
