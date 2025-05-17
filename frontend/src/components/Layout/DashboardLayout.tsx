@@ -76,7 +76,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       {user?.name || "User"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {user?.role === 'admin' ? t('admin.settings') : t('staff.orders')}
+                      {user?.role === 'ADMIN' ? t('admin.settings') : t('staff.orders')}
                     </p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="flex space-x-2">
               <Button 
                 onClick={toggleMic}
-                variant={isMicActive ? "destructive" : "outline-solid"}
+                variant={isMicActive ? "destructive" : "outline"}
                 size="sm"
                 className="flex-1"
               >

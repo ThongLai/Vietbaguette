@@ -1,7 +1,7 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from 'sonner';
 
-export type UserRole = 'admin' | 'employee';
+export type UserRole = 'ADMIN' | 'EMPLOYEE';
 
 export interface User {
   id: string;
@@ -35,14 +35,14 @@ export const mockUsers: User[] = [
     id: '1',
     name: 'Restaurant Admin',
     email: 'admin@vietbaguette.co.uk',
-    role: 'admin',
+    role: 'ADMIN',
     avatar: '/placeholder.svg',
   },
   {
     id: '2',
     name: 'Employee Nguyen',
     email: 'employee@vietbaguette.co.uk',
-    role: 'employee',
+    role: 'EMPLOYEE',
     avatar: '/placeholder.svg',
     availableTime: {
       unavailableDays: ['2025-05-20', '2025-05-21'],
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     logout,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
+    isAdmin: user?.role === 'ADMIN',
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

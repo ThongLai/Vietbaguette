@@ -88,7 +88,7 @@ const MenuManagement = () => {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/login');
-    } else if (!isLoading && isAuthenticated && user?.role !== 'admin') {
+    } else if (!isLoading && isAuthenticated && user?.role !== 'ADMIN') {
       navigate('/dashboard');
     } else if (!isLoading && isAuthenticated) {
       fetchMenuItems();
