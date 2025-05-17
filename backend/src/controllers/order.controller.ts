@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { z } from 'zod';
+import { PrismaClient } from '@prisma/client';
 
 // Validation schemas
 const selectedOptionSchema = z.object({
@@ -141,7 +142,7 @@ export const createOrder = async (req: Request, res: Response) => {
     let total = 0;
     
     // Create the order with items in a transaction
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: PrismaClient) => {
       // First get all the menuItems to calculate the total
       const menuItemIds = items.map(item => item.menuItemId);
       const menuItems = await tx.menuItem.findMany({
@@ -161,7 +162,7 @@ export const createOrder = async (req: Request, res: Response) => {
       
       // Calculate total and prepare order items
       const orderItemsData = await Promise.all(items.map(async item => {
-        const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+        const menuItem = menuItems.find((mi: any) => mi.id === item.menuItemId);
         if (!menuItem) {
           throw new Error(`Menu item with ID ${item.menuItemId} not found`);
         }
@@ -172,12 +173,12 @@ export const createOrder = async (req: Request, res: Response) => {
         
         // Handle selected options if any
         const selectedOptionsData = item.selectedOptions?.map(option => {
-          const menuOption = menuItem.options.find(opt => opt.id === option.menuOptionId);
+          const menuOption = menuItem.options.find((opt: any) => opt.id === option.menuOptionId);
           if (!menuOption) {
             throw new Error(`Menu option with ID ${option.menuOptionId} not found`);
           }
           
-          const optionChoice = menuOption.choices.find(choice => choice.id === option.optionChoiceId);
+          const optionChoice = menuOption.choices.find((choice: any) => choice.id === option.optionChoiceId);
           if (!optionChoice) {
             throw new Error(`Option choice with ID ${option.optionChoiceId} not found`);
           }
@@ -215,7 +216,7 @@ export const createOrder = async (req: Request, res: Response) => {
           customerName,
           isUrgent: isUrgent ?? false,
           isVIP: isVIP ?? false,
-          createdById: req.user.id,
+          createdById: req.user!.id,
           items: {
             create: orderItemsData,
           },
@@ -249,7 +250,7 @@ export const createOrder = async (req: Request, res: Response) => {
       
       // Create notifications
       await Promise.all(
-        users.map(user => 
+        users.map((user: any) => 
           tx.notification.create({
             data: {
               type: 'NEW_ORDER',
@@ -302,7 +303,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     }
     
     // Update order status
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: PrismaClient) => {
       // Update the order
       const updatedOrder = await tx.order.update({
         where: { id },
@@ -334,7 +335,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       
       // Create notifications
       await Promise.all(
-        users.map(user => 
+        users.map((user: any) => 
           tx.notification.create({
             data: {
               type: 'ORDER_UPDATED',
@@ -392,7 +393,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
     }
     
     // Update item status
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: PrismaClient) => {
       // Update the item
       const updatedItem = await tx.orderItem.update({
         where: { id: itemId },
@@ -418,7 +419,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       
       // If all other items have the same status, update the order
       const allItemsHaveSameStatus = otherItems.length === 0 || 
-        otherItems.every(item => item.status === status);
+        otherItems.every((item: any) => item.status === status);
       
       let updatedOrder = null;
       
@@ -436,7 +437,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       
       // Create notifications
       await Promise.all(
-        users.map(user => 
+        users.map((user: any) => 
           tx.notification.create({
             data: {
               type: 'ORDER_UPDATED',
@@ -483,7 +484,7 @@ export const updateOrderPriority = async (req: Request, res: Response) => {
     }
     
     // Update order priority
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: PrismaClient) => {
       // Update the order
       const updatedOrder = await tx.order.update({
         where: { id },
@@ -523,7 +524,7 @@ export const updateOrderPriority = async (req: Request, res: Response) => {
       
       // Create notifications
       await Promise.all(
-        users.map(user => 
+        users.map((user: any) => 
           tx.notification.create({
             data: {
               type: 'ORDER_UPDATED',

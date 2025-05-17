@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 import { z } from 'zod';
+import { PrismaClient } from '@prisma/client';
 
 // Validation schemas
 const optionChoiceSchema = z.object({
@@ -115,7 +116,7 @@ export const createMenuItem = async (req: Request, res: Response) => {
     } = validation.data;
     
     // Create the menu item with options in a transaction
-    const menuItem = await prisma.$transaction(async (tx) => {
+    const menuItem = await prisma.$transaction(async (tx: PrismaClient) => {
       const newMenuItem = await tx.menuItem.create({
         data: {
           name,
@@ -127,7 +128,7 @@ export const createMenuItem = async (req: Request, res: Response) => {
           vegetarian: vegetarian ?? false,
         },
       });
-      
+
       // Create options and choices if provided
       if (options && options.length > 0) {
         for (const option of options) {
@@ -216,7 +217,7 @@ export const updateMenuItem = async (req: Request, res: Response) => {
     }
     
     // Update the menu item with options in a transaction
-    const menuItem = await prisma.$transaction(async (tx) => {
+    const menuItem = await prisma.$transaction(async (tx: PrismaClient) => {
       // Update basic menu item data
       const updatedMenuItem = await tx.menuItem.update({
         where: { id },
@@ -300,7 +301,7 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
     }
     
     // Delete menu item
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: PrismaClient) => {
       // Delete associated options and choices first
       await tx.menuOption.deleteMany({
         where: { menuItemId: id },
