@@ -32,6 +32,15 @@ model User {
   notifications    Notification[]    @relation("NotificationRecipient")
 }
 
+// Pre-approved emails for employee self-registration
+model ApprovedEmail {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum UserRole {
   ADMIN
   EMPLOYEE
