@@ -97,7 +97,12 @@ const MenuManagement = () => {
   
   const fetchMenuItems = async () => {
     try {
-      const response = await fetch('/api/menu');
+      const token = localStorage.getItem('viet_baguette_token');
+      const response = await fetch('/api/menu', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch menu items');
       }
@@ -213,8 +218,12 @@ const MenuManagement = () => {
     }
     
     try {
+      const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch(`/api/menu/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
       });
       
       if (!response.ok) {

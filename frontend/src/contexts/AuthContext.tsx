@@ -30,74 +30,74 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Restaurant Admin',
-    email: 'admin@vietbaguette.co.uk',
-    role: 'ADMIN',
-    avatar: '/placeholder.svg',
-  },
-  {
-    id: '2',
-    name: 'Employee Nguyen',
-    email: 'employee@vietbaguette.co.uk',
-    role: 'EMPLOYEE',
-    avatar: '/placeholder.svg',
-    availableTime: {
-      unavailableDays: ['2025-05-20', '2025-05-21'],
-      unavailableTimeRanges: [
-        { day: 'monday', start: '18:00', end: '22:00' },
-        { day: 'sunday', start: '00:00', end: '23:59' },
-      ],
-    },
-  },
-];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load user from token on mount
   useEffect(() => {
-    // Check if there's a stored user in localStorage
-    const storedUser = localStorage.getItem('viet_baguette_user');
-    
-    if (storedUser) {
+    const loadUserFromToken = async () => {
+      setIsLoading(true);
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse stored user', e);
-        localStorage.removeItem('viet_baguette_user');
+        const token = localStorage.getItem('viet_baguette_token');
+        
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch user profile with the token
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to get user profile');
+        }
+        
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Failed to load user:', error);
+        // Clear invalid token
+        localStorage.removeItem('viet_baguette_token');
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
     
-    setIsLoading(false);
+    loadUserFromToken();
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Make a real API call to login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
       
-      // Find user with matching email
-      const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (!foundUser) {
-        throw new Error('Invalid email or password');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
       
-      // In a real app, you would validate the password here
-      if (password !== 'password') {
-        throw new Error('Invalid email or password');
-      }
+      const data = await response.json();
       
-      // Store user in localStorage
-      localStorage.setItem('viet_baguette_user', JSON.stringify(foundUser));
-      setUser(foundUser);
+      // Store the JWT token
+      localStorage.setItem('viet_baguette_token', data.token);
       
-      toast.success(`Welcome back, ${foundUser.name}!`);
+      // Set the user data
+      setUser(data.user);
+      
+      toast.success(`Welcome back, ${data.user.name}!`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Login failed');
       throw error;
@@ -107,7 +107,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('viet_baguette_user');
+    // Clear auth token
+    localStorage.removeItem('viet_baguette_token');
     setUser(null);
     toast.success('Logged out successfully');
   };
