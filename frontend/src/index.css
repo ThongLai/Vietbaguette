@@ -1,72 +1,250 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap')
+layer(base);
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import 'tailwindcss';
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@plugin 'tailwindcss-animate';
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-viet-red: #b53232;
+  --color-viet-orange: #e9941a;
+  --color-viet-beige: #f0e6d6;
+  --color-viet-green: #487a40;
+  --color-viet-darkred: #8c1f1f;
+  --color-viet-brown: #654321;
+  --color-viet-lightbeige: #f8f3ea;
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-ping: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-bounce: bounce 1s infinite;
+
+  --font-sans: Inter, sans-serif;
+  --font-cursive: Dancing Script, cursive;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes ping {
+    75%,
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(-5%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+@utility btn-primary {
+  @apply bg-viet-red hover:bg-viet-darkred text-white font-medium py-2 px-4 rounded-md transition-colors;
 }
 
-@media (prefers-color-scheme: light) {
+@utility btn-secondary {
+  @apply bg-viet-orange hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-md transition-colors;
+}
+
+@utility btn-outline {
+  @apply border border-viet-red text-viet-red hover:bg-viet-red hover:text-white font-medium py-2 px-4 rounded-md transition-colors;
+}
+
+@utility food-card {
+  @apply bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300;
+}
+
+@utility section-title {
+  @apply text-3xl sm:text-4xl font-cursive text-viet-red mb-6 text-center;
+}
+
+@utility nav-link {
+  @apply relative font-medium hover:text-viet-red transition-colors after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-viet-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300;
+}
+
+@utility active-nav-link {
+  @apply text-viet-red after:scale-x-100;
+}
+
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    --background: 36 33% 96%;
+    --foreground: 40 13% 23%;
+
+    --card: 36 33% 96%;
+    --card-foreground: 40 13% 23%;
+
+    --popover: 36 33% 96%;
+    --popover-foreground: 40 13% 23%;
+
+    --primary: 10 48% 44%;
+    --primary-foreground: 36 33% 96%;
+
+    --secondary: 30 81% 51%;
+    --secondary-foreground: 36 33% 96%;
+
+    --muted: 36 10% 90%;
+    --muted-foreground: 40 8% 46%;
+
+    --accent: 120 28% 36%;
+    --accent-foreground: 36 33% 96%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 36 33% 96%;
+
+    --border: 36 20% 85%;
+    --input: 36 20% 85%;
+    --ring: 30 81% 51%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 36 33% 96%;
+    --sidebar-foreground: 40 13% 23%;
+    --sidebar-primary: 10 48% 44%;
+    --sidebar-primary-foreground: 36 33% 96%;
+    --sidebar-accent: 36 10% 90%;
+    --sidebar-accent-foreground: 40 13% 23%;
+    --sidebar-border: 36 20% 85%;
+    --sidebar-ring: 30 81% 51%;
   }
-  a:hover {
-    color: #747bff;
+
+  .dark {
+    --background: 40 13% 13%;
+    --foreground: 36 33% 96%;
+
+    --card: 40 13% 13%;
+    --card-foreground: 36 33% 96%;
+
+    --popover: 40 13% 13%;
+    --popover-foreground: 36 33% 96%;
+
+    --primary: 10 48% 44%;
+    --primary-foreground: 36 33% 96%;
+
+    --secondary: 30 81% 51%;
+    --secondary-foreground: 36 33% 96%;
+
+    --muted: 40 13% 23%;
+    --muted-foreground: 36 20% 70%;
+
+    --accent: 120 28% 36%;
+    --accent-foreground: 36 33% 96%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 36 33% 96%;
+
+    --border: 40 13% 23%;
+    --input: 40 13% 23%;
+    --ring: 30 81% 51%;
+
+    --sidebar-background: 40 13% 18%;
+    --sidebar-foreground: 36 33% 96%;
+    --sidebar-primary: 10 48% 44%;
+    --sidebar-primary-foreground: 36 33% 96%;
+    --sidebar-accent: 40 13% 23%;
+    --sidebar-accent-foreground: 36 33% 96%;
+    --sidebar-border: 40 13% 23%;
+    --sidebar-ring: 30 81% 51%;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
   }
 }
