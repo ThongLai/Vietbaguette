@@ -605,9 +605,9 @@ const OrderList = ({
     <div className="w-full">
       {showTabs ? (
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="w-full justify-start mb-4">
-            <TabsTrigger value="active">{t('dashboard.orders.activeTab')}</TabsTrigger>
-            <TabsTrigger value="completed">{t('dashboard.orders.completedTab')}</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-2 mb-4">
+            <TabsTrigger className="flex justify-center" value="active">{t('dashboard.orders.activeTab')}</TabsTrigger>
+            <TabsTrigger className="flex justify-center" value="completed">{t('dashboard.orders.completedTab')}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="active">
