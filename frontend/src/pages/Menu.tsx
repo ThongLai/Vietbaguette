@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MenuItem } from '@/types/menu'
-import { MenuSection } from '@/components/Menu/MenuSection'
+import { MenuCard } from '@/components/Menu/MenuCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { motion } from 'framer-motion'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -138,7 +138,7 @@ function MenuContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <MenuSection.Card item={item} />
+              <MenuCard item={item} />
             </motion.div>
           ))}
         </div>
