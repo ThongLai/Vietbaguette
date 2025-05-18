@@ -5,7 +5,6 @@ import { useOrders, Order } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/Layout/DashboardLayout';
 import OrderList from '@/components/Dashboard/OrderList';
-import NewOrderForm from '@/components/Dashboard/NewOrderForm';
 import { 
   Card, 
   CardContent, 
@@ -13,12 +12,6 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
 import { 
   Select,
   SelectContent,
@@ -53,7 +46,6 @@ const Orders = () => {
   // const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   
   // UI states
-  const [activeTab, setActiveTab] = useState<string>('orders');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -212,59 +204,41 @@ const Orders = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="new-order">Create Order</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="orders">
-              <div>
-                <h3 className="font-medium text-lg mb-4">Order Management</h3>
-                {filteredOrders.length === 0 ? (
-                  <div className="text-center py-10">
-                    <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-                    <h3 className="text-lg font-medium mb-1">No orders found</h3>
-                    <p className="text-muted-foreground mb-4">
-                      {searchQuery || filterStatus !== 'all'
-                        ? "No orders match your current filters" 
-                        : "There are no orders in the system yet"}
-                    </p>
-                    {(searchQuery || filterStatus !== 'all') && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setSearchQuery('');
-                          setFilterStatus('all');
-                        }}
-                      >
-                        Clear Filters
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'}
-                    </p>
-                    {/* Pass the handler function to OrderList */}
-                    <OrderList 
-                      searchResults={filteredOrders} 
-                      useDropdownForStatus={true}
-                      onStatusChange={handleStatusChange}
-                    />
-                  </div>
+          <div>
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-10">
+                <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+                <h3 className="text-lg font-medium mb-1">No orders found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery || filterStatus !== 'all'
+                    ? "No orders match your current filters" 
+                    : "There are no orders in the system yet"}
+                </p>
+                {(searchQuery || filterStatus !== 'all') && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterStatus('all');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
                 )}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="new-order">
-              <div>
-                <h3 className="font-medium text-lg mb-4">Place New Order</h3>
-                <NewOrderForm />
+            ) : (
+              <div className="space-y-6">
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'}
+                </p>
+                <OrderList 
+                  searchResults={filteredOrders} 
+                  useDropdownForStatus={true}
+                  onStatusChange={handleStatusChange}
+                />
               </div>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </CardContent>
       </Card>
     </DashboardLayout>
