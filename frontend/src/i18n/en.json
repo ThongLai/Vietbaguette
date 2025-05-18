@@ -51,7 +51,11 @@
       "management": "Order Management",
       "manageDescription": "View, filter, and manage all orders in one place",
       "activeTab": "Active",
-      "completedTab": "Completed"
+      "completedTab": "Completed",
+      "cancelledTab": "Cancelled",
+      "noActiveOrders": "No active orders at the moment",
+      "noCompletedOrders": "No completed orders yet",
+      "noCancelledOrders": "No cancelled orders"
     }
   },
   "form": {

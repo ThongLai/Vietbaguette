@@ -92,6 +92,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
+  const [cancelledOrders, setCancelledOrders] = useState<Order[]>([]);
 
   // Fetch menu on mount
   useEffect(() => {
@@ -182,6 +183,19 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       if (!completedResponse.ok) throw new Error('Failed to fetch completed orders');
       const completedData = await completedResponse.json();
       setCompletedOrders(completedData);
+
+      // Fetch cancelled orders
+      const cancelledResponse = await fetch('/api/orders?status=CANCELLED', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (!cancelledResponse.ok) throw new Error('Failed to fetch cancelled orders');
+      const cancelledData = await cancelledResponse.json();
+      setCancelledOrders(cancelledData);
+
+      // Update all orders
+      setOrders([...activeData, ...completedData, ...cancelledData]);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
@@ -414,8 +428,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         isMenuLoading,
         activeOrders,
         completedOrders,
-        orders: [...activeOrders, ...completedOrders],
-        cancelledOrders: [],
+        cancelledOrders,
+        orders: [...activeOrders, ...completedOrders, ...cancelledOrders],
         fetchOrders,
         addOrder,
         updateOrderStatus,

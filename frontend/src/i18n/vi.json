@@ -51,7 +51,11 @@
       "management": "Quản lý đơn hàng",
       "manageDescription": "Xem, lọc và quản lý tất cả đơn đặt hàng tại một nơi",
       "activeTab": "Đang xử lý",
-      "completedTab": "Hoàn thành"
+      "completedTab": "Hoàn thành",
+      "cancelledTab": "Đã hủy",
+      "noActiveOrders": "Không có đơn hàng đang xử lý",
+      "noCompletedOrders": "Chưa có đơn hàng hoàn thành",
+      "noCancelledOrders": "Không có đơn hàng đã hủy"
     }
   },
   "form": {

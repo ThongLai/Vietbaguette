@@ -43,14 +43,14 @@ import {
 
 const Orders = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { activeOrders, completedOrders, fetchOrders, updateOrderStatus } = useOrders();
+  const { activeOrders, completedOrders, cancelledOrders, fetchOrders, updateOrderStatus } = useOrders();
   const { t } = useLanguage();
   const navigate = useNavigate();
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showUrgentOnly, setShowUrgentOnly] = useState(false);
+  // const [showUrgentOnly, setShowUrgentOnly] = useState(false);
   
   // UI states
   const [activeTab, setActiveTab] = useState<string>('orders');
@@ -75,7 +75,7 @@ const Orders = () => {
   };
 
   // Get all orders (active and completed)
-  const allOrders = [...activeOrders, ...completedOrders];
+  const allOrders = [...activeOrders, ...completedOrders, ...cancelledOrders];
   
   // Filter orders based on criteria
   const filteredOrders = allOrders.filter(order => {
@@ -96,18 +96,14 @@ const Orders = () => {
       return false;
     }
     
-    // Urgent filter
-    if (showUrgentOnly && !order.isUrgent) {
-      return false;
-    }
-    
     return true;
   });
   
   const orderStatCounts = {
-    active: activeOrders.filter(o => o.status === 'ACTIVE').length,
+    active: activeOrders.length,
     completed: completedOrders.length,
-    urgent: allOrders.filter(o => o.isUrgent).length,
+    cancelled: cancelledOrders.length,
+    // urgent: allOrders.filter(o => o.isUrgent).length,
   };
 
   // Function to handle status change via dropdown
@@ -150,7 +146,7 @@ const Orders = () => {
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {/* Order stats cards */}
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
@@ -175,8 +171,8 @@ const Orders = () => {
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Urgent</p>
-              <p className="text-2xl font-bold">{orderStatCounts.urgent}</p>
+              <p className="text-sm text-muted-foreground">Cancelled</p>
+              <p className="text-2xl font-bold">{orderStatCounts.cancelled}</p>
             </div>
             <AlertTriangle className="h-10 w-10 text-red-500 opacity-80" />
           </CardContent>
@@ -191,7 +187,7 @@ const Orders = () => {
           </CardDescription>
           
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -208,22 +204,11 @@ const Orders = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
                 <SelectItem value="COMPLETED">Completed</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant={showUrgentOnly ? "destructive" : "outline"} 
-                onClick={() => setShowUrgentOnly(!showUrgentOnly)}
-                className="flex-1"
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                {showUrgentOnly ? 'Showing Urgent Only' : 'All Priorities'}
-              </Button>
-            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -241,17 +226,16 @@ const Orders = () => {
                     <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
                     <h3 className="text-lg font-medium mb-1">No orders found</h3>
                     <p className="text-muted-foreground mb-4">
-                      {searchQuery || filterStatus !== 'all' || showUrgentOnly 
+                      {searchQuery || filterStatus !== 'all'
                         ? "No orders match your current filters" 
                         : "There are no orders in the system yet"}
                     </p>
-                    {(searchQuery || filterStatus !== 'all' || showUrgentOnly) && (
+                    {(searchQuery || filterStatus !== 'all') && (
                       <Button 
                         variant="outline" 
                         onClick={() => {
                           setSearchQuery('');
                           setFilterStatus('all');
-                          setShowUrgentOnly(false);
                         }}
                       >
                         Clear Filters

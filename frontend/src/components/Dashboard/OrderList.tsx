@@ -570,7 +570,7 @@ const OrderList = ({
   useDropdownForStatus?: boolean;
   onStatusChange?: (orderId: string, newStatus: string) => Promise<void>;
 }) => {
-  const { activeOrders, completedOrders } = useOrders();
+  const { activeOrders, completedOrders, cancelledOrders, orders } = useOrders();
   const { t } = useLanguage();
 
   // Use provided searchResults if available, otherwise use default orders from context
@@ -597,6 +597,12 @@ const OrderList = ({
       ? ordersToDisplay.filter(order => order.status === 'COMPLETED')
       : completedOrders
   );
+
+  const cancelledOrdersList = getUniqueOrders(
+    ordersToDisplay 
+      ? ordersToDisplay.filter(order => order.status === 'CANCELLED')
+      : cancelledOrders
+  );
     
   // Only show the tabs if we're not using searchResults
   const showTabs = !searchResults;
@@ -605,21 +611,28 @@ const OrderList = ({
     <div className="w-full">
       {showTabs ? (
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 mb-4">
-            <TabsTrigger className="flex justify-center" value="active">{t('dashboard.orders.activeTab')}</TabsTrigger>
-            <TabsTrigger className="flex justify-center" value="completed">{t('dashboard.orders.completedTab')}</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsTrigger className="flex justify-center" value="active">
+              {t('dashboard.orders.activeTab')} ({activeOrdersList.length})
+            </TabsTrigger>
+            <TabsTrigger className="flex justify-center" value="completed">
+              {t('dashboard.orders.completedTab')} ({completedOrdersList.length})
+            </TabsTrigger>
+            <TabsTrigger className="flex justify-center" value="cancelled">
+              {t('dashboard.orders.cancelledTab')} ({cancelledOrdersList.length})
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="active">
             {activeOrdersList.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No active orders at the moment</p>
+                <p className="text-muted-foreground">{t('dashboard.orders.noActiveOrders')}</p>
               </div>
             ) : (
               <ScrollArea className="h-[calc(100vh-240px)] pr-4">
                 {activeOrdersList.length > 0 && (
                   <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-3">Active</h2>
+                    <h2 className="text-lg font-semibold mb-3">{t('dashboard.orders.activeTab')}</h2>
                     {activeOrdersList.map(order => (
                       <OrderCard 
                         key={order.id} 
@@ -637,18 +650,47 @@ const OrderList = ({
           <TabsContent value="completed">
             {completedOrdersList.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No completed orders yet</p>
+                <p className="text-muted-foreground">{t('dashboard.orders.noCompletedOrders')}</p>
               </div>
             ) : (
               <ScrollArea className="h-[calc(100vh-240px)] pr-4">
-                {completedOrdersList.map(order => (
-                  <OrderCard 
-                    key={order.id} 
-                    order={order} 
-                    useDropdownForStatus={useDropdownForStatus}
-                    onStatusChange={onStatusChange}
-                  />
-                ))}
+                {completedOrdersList.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-3">{t('dashboard.orders.completedTab')}</h2>
+                    {completedOrdersList.map(order => (
+                      <OrderCard 
+                        key={order.id} 
+                        order={order} 
+                        useDropdownForStatus={useDropdownForStatus}
+                        onStatusChange={onStatusChange}
+                      />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="cancelled">
+            {cancelledOrdersList.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">{t('dashboard.orders.noCancelledOrders')}</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-240px)] pr-4">
+                {cancelledOrdersList.length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-semibold mb-3">{t('dashboard.orders.cancelledTab')}</h2>
+                    {cancelledOrdersList.map(order => (
+                      <OrderCard 
+                        key={order.id} 
+                        order={order} 
+                        useDropdownForStatus={useDropdownForStatus}
+                        onStatusChange={onStatusChange}
+                      />
+                    ))}
+                  </div>
+                )}
               </ScrollArea>
             )}
           </TabsContent>
@@ -658,7 +700,7 @@ const OrderList = ({
         <ScrollArea className="h-[calc(100vh-340px)] pr-4">
           {activeOrdersList.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-3">Active</h2>
+              <h2 className="text-lg font-semibold mb-3">{t('dashboard.orders.activeTab')}</h2>
               {activeOrdersList.map(order => (
                 <OrderCard 
                   key={order.id} 
@@ -671,9 +713,23 @@ const OrderList = ({
           )}
           
           {completedOrdersList.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Completed</h2>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3">{t('dashboard.orders.completedTab')}</h2>
               {completedOrdersList.map(order => (
+                <OrderCard 
+                  key={order.id} 
+                  order={order} 
+                  useDropdownForStatus={useDropdownForStatus}
+                  onStatusChange={onStatusChange}
+                />
+              ))}
+            </div>
+          )}
+          
+          {cancelledOrdersList.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold mb-3">{t('dashboard.orders.cancelledTab')}</h2>
+              {cancelledOrdersList.map(order => (
                 <OrderCard 
                   key={order.id} 
                   order={order} 
