@@ -1,5 +1,7 @@
 # Viet Baguette Fullstack App
 
+[vietbaguette.vercel.app](https://vietbaguette.vercel.app)
+
 ## Project info
 
 This project is a full-stack responsive web app for Viet Baguette restaurant in Halifax, UK. It is designed to manage orders, staff, and menu, and to improve communication and efficiency in the restaurant.
