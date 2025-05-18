@@ -6,7 +6,7 @@ import {
   createOrder,
   updateOrderStatus,
   updateOrderItemStatus,
-  updateOrderPriority
+  updateOrderUrgency
 } from '../controllers/order.controller.js';
 import { authenticate, allowEitherRole } from '../middleware/auth.middleware.js';
 
@@ -30,7 +30,7 @@ router.patch('/:id/status', allowEitherRole as RequestHandler, updateOrderStatus
 // PATCH an order item status
 router.patch('/:orderId/items/:itemId/status', allowEitherRole as RequestHandler, updateOrderItemStatus as RequestHandler);
 
-// PATCH an order to mark urgent or VIP
-router.patch('/:id/priority', allowEitherRole as RequestHandler, updateOrderPriority as RequestHandler);
+// PATCH an order to mark as urgent
+router.patch('/:id/priority', allowEitherRole as RequestHandler, updateOrderUrgency as RequestHandler);
 
 export default router; 

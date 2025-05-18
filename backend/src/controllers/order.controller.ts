@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 // Validation schemas
 const selectedOptionSchema = z.object({
@@ -22,7 +22,6 @@ const createOrderSchema = z.object({
   tableNumber: z.number().int().optional(),
   customerName: z.string().optional(),
   isUrgent: z.boolean().optional(),
-  isVIP: z.boolean().optional(),
 });
 
 const updateOrderStatusSchema = z.object({
@@ -136,13 +135,15 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
     
-    const { items, tableNumber, customerName, isUrgent, isVIP } = validation.data;
+    const { items, tableNumber, customerName, isUrgent } = validation.data;
     
-    // Calculate total price
+    // Calculate order total
     let total = 0;
+    // Initialize the processedItems array
+    const processedItems: any[] = [];
     
     // Create the order with items in a transaction
-    const order = await prisma.$transaction(async (tx: PrismaClient) => {
+    const order = await prisma.$transaction(async (tx) => {
       // First get all the menuItems to calculate the total
       const menuItemIds = items.map(item => item.menuItemId);
       const menuItems = await tx.menuItem.findMany({
@@ -159,118 +160,128 @@ export const createOrder = async (req: Request, res: Response) => {
           },
         },
       });
-      
-      // Calculate total and prepare order items
-      const orderItemsData = await Promise.all(items.map(async item => {
-        const menuItem = menuItems.find((mi: any) => mi.id === item.menuItemId);
+      // Process each item
+      for (const item of items) {
+        const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+        
         if (!menuItem) {
-          throw new Error(`Menu item with ID ${item.menuItemId} not found`);
+          return res.status(400).json({ message: `Menu item with ID ${item.menuItemId} not found` });
         }
         
-        // Base price calculation
-        const itemTotal = menuItem.price * item.quantity;
-        total += itemTotal;
-        
-        // Handle selected options if any
-        const selectedOptionsData = item.selectedOptions?.map(option => {
-          const menuOption = menuItem.options.find((opt: any) => opt.id === option.menuOptionId);
+        // Calculate base price for this item
+        let itemTotal = menuItem.price * item.quantity;
+      
+      // Create item with options if provided
+      const processedItem: any = {
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        notes: item.notes,
+      };
+      // Process options if provided
+      if (item.selectedOptions && item.selectedOptions.length > 0) {
+        processedItem.selectedOptions = {
+          create: [],
+        };
+        for (const option of item.selectedOptions) {
+          const menuOption = await tx.menuOption.findUnique({
+            where: { id: option.menuOptionId },
+            include: {
+              choices: true,
+            },
+          });
+          
           if (!menuOption) {
-            throw new Error(`Menu option with ID ${option.menuOptionId} not found`);
+            return res.status(400).json({ message: `Menu option with ID ${option.menuOptionId} not found` });
           }
           
-          const optionChoice = menuOption.choices.find((choice: any) => choice.id === option.optionChoiceId);
+          const optionChoice = await tx.optionChoice.findUnique({
+            where: { id: option.optionChoiceId },
+          });
+          
           if (!optionChoice) {
-            throw new Error(`Option choice with ID ${option.optionChoiceId} not found`);
+            return res.status(400).json({ message: `Option choice with ID ${option.optionChoiceId} not found` });
           }
           
-          // Add option price to total if any
+          // Add option price if it exists
           if (optionChoice.price) {
-            total += optionChoice.price * item.quantity;
+            itemTotal += optionChoice.price * item.quantity;
           }
           
-          return {
+          processedItem.selectedOptions.create.push({
             menuOptionId: option.menuOptionId,
             optionChoiceId: option.optionChoiceId,
             extraPrice: optionChoice.price,
-          };
-        });
-        
-        return {
-          menuItemId: item.menuItemId,
-          quantity: item.quantity,
-          notes: item.notes,
-          status: 'PENDING',
-          selectedOptions: selectedOptionsData
-            ? {
-                create: selectedOptionsData,
-              }
-            : undefined,
-        };
-      }));
+          });
+        }
+      }
       
-      // Create the order with items
-      const newOrder = await tx.order.create({
-        data: {
-          total,
-          tableNumber,
-          customerName,
-          isUrgent: isUrgent ?? false,
-          isVIP: isVIP ?? false,
-          createdById: req.user!.id,
-          items: {
-            create: orderItemsData,
-          },
+      // Add item total to order total
+      total += itemTotal;
+      
+      processedItems.push(processedItem);
+    }
+    
+    // Create order in a transaction
+    const createdOrder = await tx.order.create({
+      data: {
+        total,
+        tableNumber,
+        customerName,
+        isUrgent: isUrgent ?? false,
+        createdById: req.user!.id,
+        items: {
+          create: processedItems,
         },
-        include: {
-          items: {
-            include: {
-              menuItem: true,
-              selectedOptions: {
-                include: {
-                  menuOption: true,
-                  optionChoice: true,
-                },
+      },
+      include: {
+        items: {
+          include: {
+            menuItem: true,
+            selectedOptions: {
+              include: {
+                menuOption: true,
+                optionChoice: true,
               },
             },
           },
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
-      });
-      
-      // Create notifications for all users
-      const users = await tx.user.findMany({
-        select: { id: true },
-      });
-      
-      // Create notifications
-      await Promise.all(
-        users.map((user: any) => 
-          tx.notification.create({
-            data: {
-              type: 'NEW_ORDER',
-              content: `New order #${newOrder.id.substring(0, 8)} has been placed`,
-              orderId: newOrder.id,
-              userId: user.id,
-            }
-          })
-        )
-      );
-      
-      return newOrder;
+      },
     });
     
-    // Return the new order
-    res.status(201).json(order);
-  } catch (error) {
-    console.error('Create order error:', error);
-    res.status(500).json({ message: 'Server error creating order' });
-  }
+    // Create notifications for all users
+    const users = await tx.user.findMany({
+      select: { id: true },
+    });
+    
+    // Create notifications
+    await Promise.all(
+      users.map((user: any) => 
+        tx.notification.create({
+          data: {
+            type: 'NEW_ORDER',
+            content: `New order #${createdOrder.id.substring(0, 8)} created`,
+            orderId: createdOrder.id,
+            userId: user.id,
+          }
+        })
+      )
+    );
+    
+    return createdOrder;
+  });
+  
+  res.status(201).json(order);
+} catch (error) {
+  console.error('Create order error:', error);
+  res.status(500).json({ message: 'Server error creating order' });
+}
 };
 
 // Update order status
@@ -302,55 +313,63 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Order not found' });
     }
     
-    // Update order status
-    const order = await prisma.$transaction(async (tx: PrismaClient) => {
-      // Update the order
-      const updatedOrder = await tx.order.update({
-        where: { id },
-        data: { status },
-        include: {
-          items: true,
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+    // Update order status in a transaction
+    let updatedOrder;
+    
+    try {
+      // First update the order
+      updatedOrder = await prisma.$transaction(async (prismaTransaction) => {
+        // Update the order
+        const updatedOrder = await prismaTransaction.order.update({
+          where: { id },
+          data: { status },
+          include: {
+            items: true,
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-        },
-      });
-      
-      // If status is COMPLETED or CANCELLED, update all items to match
-      if (status === 'COMPLETED' || status === 'CANCELLED') {
-        await tx.orderItem.updateMany({
-          where: { orderId: id },
-          data: { status },
         });
-      }
-      
-      // Create notifications for all users
-      const users = await tx.user.findMany({
-        select: { id: true },
+        
+        // If status is COMPLETED or CANCELLED, update all items to match
+        if (status === 'COMPLETED' || status === 'CANCELLED') {
+          await prismaTransaction.orderItem.updateMany({
+            where: { orderId: id },
+            data: { status },
+          });
+        }
+        
+        // Get all users for notifications
+        const users = await prismaTransaction.user.findMany({
+          select: { id: true },
+        });
+        
+        // Create notifications
+        await Promise.all(
+          users.map((user: any) => 
+            prismaTransaction.notification.create({
+              data: {
+                type: 'ORDER_UPDATED',
+                content: `Order #${id.substring(0, 8)} status updated to ${status}`,
+                orderId: id,
+                userId: user.id,
+              }
+            })
+          )
+        );
+        
+        return updatedOrder;
       });
-      
-      // Create notifications
-      await Promise.all(
-        users.map((user: any) => 
-          tx.notification.create({
-            data: {
-              type: 'ORDER_UPDATED',
-              content: `Order #${id.substring(0, 8)} status updated to ${status}`,
-              orderId: id,
-              userId: user.id,
-            }
-          })
-        )
-      );
-      
-      return updatedOrder;
-    });
+    } catch (err) {
+      console.error('Transaction error:', err);
+      throw new Error('Failed to update order status');
+    }
     
-    res.json(order);
+    res.json(updatedOrder);
   } catch (error) {
     console.error('Update order status error:', error);
     res.status(500).json({ message: 'Server error updating order status' });
@@ -393,9 +412,9 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
     }
     
     // Update item status
-    const result = await prisma.$transaction(async (tx: PrismaClient) => {
+    const result = await prisma.$transaction(async (prismaTransaction) => {
       // Update the item
-      const updatedItem = await tx.orderItem.update({
+      const updatedItem = await prismaTransaction.orderItem.update({
         where: { id: itemId },
         data: { status },
         include: {
@@ -410,7 +429,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       });
       
       // Check if all items are completed or cancelled to update the order status
-      const otherItems = await tx.orderItem.findMany({
+      const otherItems = await prismaTransaction.orderItem.findMany({
         where: {
           orderId,
           id: { not: itemId },
@@ -424,21 +443,21 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       let updatedOrder = null;
       
       if (allItemsHaveSameStatus) {
-        updatedOrder = await tx.order.update({
+        updatedOrder = await prismaTransaction.order.update({
           where: { id: orderId },
           data: { status },
         });
       }
       
       // Create notifications for all users
-      const users = await tx.user.findMany({
+      const users = await prismaTransaction.user.findMany({
         select: { id: true },
       });
       
       // Create notifications
       await Promise.all(
         users.map((user: any) => 
-          tx.notification.create({
+          prismaTransaction.notification.create({
             data: {
               type: 'ORDER_UPDATED',
               content: `${existingItem.menuItem.name} in order #${orderId.substring(0, 8)} is now ${status}`,
@@ -459,19 +478,19 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
   }
 };
 
-// Mark order as urgent or VIP
-export const updateOrderPriority = async (req: Request, res: Response) => {
+// Mark order as urgent (renamed from updateOrderPriority)
+export const updateOrderUrgency = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
     const { id } = req.params;
-    const { isUrgent, isVIP } = req.body;
+    const { isUrgent } = req.body;
     
-    // Check if at least one field is provided
-    if (isUrgent === undefined && isVIP === undefined) {
-      return res.status(400).json({ message: 'At least one of isUrgent or isVIP must be provided' });
+    // Check if isUrgent is provided
+    if (isUrgent === undefined) {
+      return res.status(400).json({ message: 'isUrgent must be provided' });
     }
     
     // Check if order exists
@@ -484,13 +503,12 @@ export const updateOrderPriority = async (req: Request, res: Response) => {
     }
     
     // Update order priority
-    const order = await prisma.$transaction(async (tx: PrismaClient) => {
+    const order = await prisma.$transaction(async (prismaTransaction) => {
       // Update the order
-      const updatedOrder = await tx.order.update({
+      const updatedOrder = await prismaTransaction.order.update({
         where: { id },
         data: {
-          isUrgent: isUrgent !== undefined ? isUrgent : existingOrder.isUrgent,
-          isVIP: isVIP !== undefined ? isVIP : existingOrder.isVIP,
+          isUrgent: isUrgent,
         },
         include: {
           items: {
@@ -509,23 +527,18 @@ export const updateOrderPriority = async (req: Request, res: Response) => {
       });
       
       // Create notifications for all users
-      const users = await tx.user.findMany({
+      const users = await prismaTransaction.user.findMany({
         select: { id: true },
       });
       
       // Determine notification content
       let content = `Order #${id.substring(0, 8)} priority updated`;
-      if (isUrgent !== undefined) {
-        content += isUrgent ? ' - marked as URGENT' : ' - no longer urgent';
-      }
-      if (isVIP !== undefined) {
-        content += isVIP ? ' - marked as VIP' : ' - no longer VIP';
-      }
+      content += isUrgent ? ' - marked as URGENT' : ' - no longer urgent';
       
       // Create notifications
       await Promise.all(
         users.map((user: any) => 
-          tx.notification.create({
+          prismaTransaction.notification.create({
             data: {
               type: 'ORDER_UPDATED',
               content,
@@ -541,7 +554,7 @@ export const updateOrderPriority = async (req: Request, res: Response) => {
     
     res.json(order);
   } catch (error) {
-    console.error('Update order priority error:', error);
-    res.status(500).json({ message: 'Server error updating order priority' });
+    console.error('Update order urgency error:', error);
+    res.status(500).json({ message: 'Server error updating order urgency' });
   }
 }; 

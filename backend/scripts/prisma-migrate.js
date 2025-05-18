@@ -29,10 +29,18 @@ if (!validCommands.includes(command)) {
 
 console.log(`Running prisma migrate ${command}...`);
 
+// Get additional args (e.g., --name)
+const additionalArgs = args.slice(1);
+const prismaArgs = ['prisma', 'migrate', command, ...additionalArgs];
+
+// Use npx.cmd on Windows, npx otherwise
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
 // Run Prisma CLI command
-const prisma = spawn('npx', ['prisma', 'migrate', command], {
+const prisma = spawn(npxCommand, prismaArgs, {
   stdio: 'inherit',
   cwd: projectRoot,
+  shell: process.platform === 'win32', // Use shell on Windows
 });
 
 prisma.on('close', (code) => {

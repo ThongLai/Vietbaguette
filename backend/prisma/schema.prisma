@@ -90,7 +90,6 @@ model Order {
   status        OrderStatus @default(PENDING)
   total         Float
   isUrgent      Boolean     @default(false)
-  isVIP         Boolean     @default(false)
   tableNumber   Int?
   customerName  String?
   createdById   String

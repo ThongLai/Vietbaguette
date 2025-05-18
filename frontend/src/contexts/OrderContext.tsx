@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from './AuthContext';
 
 export interface MenuItem {
   id: string;
@@ -49,7 +50,6 @@ export interface Order {
   tableNumber?: number;
   customerName?: string;
   isUrgent?: boolean;
-  isVIP?: boolean;
   createdBy: {
     id: string;
     name: string;
@@ -60,8 +60,10 @@ export interface Order {
 interface OrderContextType {
   menu: MenuItem[];
   isMenuLoading: boolean;
+  orders: Order[];
   activeOrders: Order[];
   completedOrders: Order[];
+  cancelledOrders: Order[];
   fetchOrders: () => Promise<void>;
   addOrder: (orderData: { 
     items: { 
@@ -79,7 +81,6 @@ interface OrderContextType {
   updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
   updateItemStatus: (orderId: string, itemId: string, status: OrderItem['status']) => Promise<void>;
   markOrderUrgent: (orderId: string, isUrgent: boolean) => Promise<void>;
-  markOrderVIP: (orderId: string, isVIP: boolean) => Promise<void>;
   deleteOrder: (orderId: string) => Promise<void>;
 }
 
@@ -88,6 +89,7 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [isMenuLoading, setIsMenuLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
 
@@ -412,12 +414,13 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         isMenuLoading,
         activeOrders,
         completedOrders,
+        orders: [...activeOrders, ...completedOrders],
+        cancelledOrders: [],
         fetchOrders,
         addOrder,
         updateOrderStatus,
         updateItemStatus,
         markOrderUrgent,
-        markOrderVIP,
         deleteOrder,
       }}
     >

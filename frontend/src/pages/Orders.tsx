@@ -37,8 +37,7 @@ import {
   Filter, 
   Check, 
   Clock, 
-  AlertTriangle, 
-  UserCheck, 
+  AlertTriangle,
   RefreshCw 
 } from 'lucide-react';
 
@@ -52,7 +51,6 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
-  const [showVIPOnly, setShowVIPOnly] = useState(false);
   
   // UI states
   const [activeTab, setActiveTab] = useState<string>('orders');
@@ -103,11 +101,6 @@ const Orders = () => {
       return false;
     }
     
-    // VIP filter
-    if (showVIPOnly && !order.isVIP) {
-      return false;
-    }
-    
     return true;
   });
   
@@ -116,7 +109,6 @@ const Orders = () => {
     preparing: activeOrders.filter(o => o.status === 'PREPARING').length,
     completed: completedOrders.length,
     urgent: allOrders.filter(o => o.isUrgent).length,
-    vip: allOrders.filter(o => o.isVIP).length,
   };
 
   // Function to handle status change via dropdown
@@ -159,7 +151,7 @@ const Orders = () => {
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Order stats cards */}
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
@@ -200,16 +192,6 @@ const Orders = () => {
             <AlertTriangle className="h-10 w-10 text-red-500 opacity-80" />
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">VIP</p>
-              <p className="text-2xl font-bold">{orderStatCounts.vip}</p>
-            </div>
-            <UserCheck className="h-10 w-10 text-purple-500 opacity-80" />
-          </CardContent>
-        </Card>
       </div>
       
       <Card className="mb-6">
@@ -248,23 +230,10 @@ const Orders = () => {
               <Button 
                 variant={showUrgentOnly ? "destructive" : "outline"} 
                 onClick={() => setShowUrgentOnly(!showUrgentOnly)}
-                size="sm"
                 className="flex-1"
               >
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                Urgent Only
-              </Button>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant={showVIPOnly ? "secondary" : "outline"} 
-                onClick={() => setShowVIPOnly(!showVIPOnly)}
-                size="sm"
-                className="flex-1"
-              >
-                <UserCheck className="mr-2 h-4 w-4" />
-                VIP Only
+                {showUrgentOnly ? 'Showing Urgent Only' : 'All Priorities'}
               </Button>
             </div>
           </div>
@@ -284,18 +253,17 @@ const Orders = () => {
                     <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
                     <h3 className="text-lg font-medium mb-1">No orders found</h3>
                     <p className="text-muted-foreground mb-4">
-                      {searchQuery || filterStatus !== 'all' || showUrgentOnly || showVIPOnly 
+                      {searchQuery || filterStatus !== 'all' || showUrgentOnly 
                         ? "No orders match your current filters" 
                         : "There are no orders in the system yet"}
                     </p>
-                    {(searchQuery || filterStatus !== 'all' || showUrgentOnly || showVIPOnly) && (
+                    {(searchQuery || filterStatus !== 'all' || showUrgentOnly) && (
                       <Button 
                         variant="outline" 
                         onClick={() => {
                           setSearchQuery('');
                           setFilterStatus('all');
                           setShowUrgentOnly(false);
-                          setShowVIPOnly(false);
                         }}
                       >
                         Clear Filters

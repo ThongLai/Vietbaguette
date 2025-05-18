@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Clock, Check, AlertTriangle, UserCheck, Bell, Edit, Trash, Plus, Minus } from 'lucide-react';
+import { X, Clock, Check, AlertTriangle, UserCheck, Bell, Edit, Trash, Plus, Minus, Flame, MoreVertical } from 'lucide-react';
 import { Order, OrderItem, useOrders } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
   switch (status) {
@@ -55,7 +57,7 @@ const OrderCard = ({
   useDropdownForStatus?: boolean;
   onStatusChange?: (orderId: string, newStatus: string) => Promise<void>;
 }) => {
-  const { updateOrderStatus, updateItemStatus, markOrderUrgent, markOrderVIP, deleteOrder } = useOrders();
+  const { updateOrderStatus, updateItemStatus, markOrderUrgent, deleteOrder } = useOrders();
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
@@ -87,10 +89,6 @@ const OrderCard = ({
 
   const handleToggleUrgent = () => {
     markOrderUrgent(order.id, !order.isUrgent);
-  };
-
-  const handleToggleVIP = () => {
-    markOrderVIP(order.id, !order.isVIP);
   };
 
   const handleModifyOrder = () => {
@@ -183,11 +181,6 @@ const OrderCard = ({
         await markOrderUrgent(order.id, modifiedOrder.isUrgent || false);
       }
       
-      // Update VIP flag if changed
-      if (modifiedOrder.isVIP !== order.isVIP) {
-        await markOrderVIP(order.id, modifiedOrder.isVIP || false);
-      }
-      
       // Update order details (customer name, table number) and item modifications
       // This would be a separate API call in a real implementation
       console.log('Order details to save:', modifiedOrder);
@@ -249,9 +242,6 @@ const OrderCard = ({
             <div>
               <CardTitle className="text-lg flex items-center">
                 Order #{order.id.slice(-4)}
-                {order.isVIP && (
-                  <Badge className="ml-2 bg-purple-500">VIP</Badge>
-                )}
                 {order.isUrgent && (
                   <div className="relative ml-2">
                     <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -441,24 +431,6 @@ const OrderCard = ({
                     onCheckedChange={(checked) => setModifiedOrder({
                       ...modifiedOrder,
                       isUrgent: checked
-                    })}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <label 
-                    htmlFor="vip-toggle"
-                    className="text-sm font-medium flex items-center cursor-pointer"
-                  >
-                    <UserCheck className="mr-1.5 h-4 w-4 text-purple-500" />
-                    VIP Customer
-                  </label>
-                  <Switch 
-                    id="vip-toggle"
-                    checked={modifiedOrder.isVIP || false}
-                    onCheckedChange={(checked) => setModifiedOrder({
-                      ...modifiedOrder,
-                      isVIP: checked
                     })}
                   />
                 </div>
