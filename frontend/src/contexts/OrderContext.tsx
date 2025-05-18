@@ -202,14 +202,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
-
-    //   // Show only one error toast
-    //   toast.error('Failed to load orders', { 
-    //     id: 'orders-fetch-error',
-    //     duration: 3000
-    //   });
-    // } finally {
-    //   setIsLoadingOrders(false);
+    } finally {
+      setIsLoadingOrders(false);
     }
   };
 
