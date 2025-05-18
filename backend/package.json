@@ -2,14 +2,17 @@
   "name": "Vietbaguette-backend",
   "version": "0.1.1",
   "type": "module",
-  "scripts": {
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },"scripts": {
     "dev": "nodemon --exec tsx src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc -p tsconfig.production.json",
     "start": "node dist/index.js",
     "seed:menu": "tsx scripts/seedMenu.ts",
     "seed:admin": "tsx scripts/seedAdmin.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "node scripts/prisma-migrate.js dev"
+    "migrate": "node scripts/prisma-migrate.js dev",
+    "vercel-build": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

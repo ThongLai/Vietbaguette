@@ -25,8 +25,10 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: CORS_ORIGIN,
-  credentials: true
+  origin: [CORS_ORIGIN, FRONTEND_URL, 'https://vietbaguette.vercel.app'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
