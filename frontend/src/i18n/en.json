@@ -55,7 +55,12 @@
       "cancelledTab": "Cancelled",
       "noActiveOrders": "No active orders at the moment",
       "noCompletedOrders": "No completed orders yet",
-      "noCancelledOrders": "No cancelled orders"
+      "noCancelledOrders": "No cancelled orders",
+      "showing": "Showing",
+      "noOrdersFound": "No Orders Found",
+      "noOrdersMatchFilter": "No orders match your filter criteria",
+      "noOrdersYet": "You don't have any orders yet",
+      "clearFilters": "Clear Filters"
     }
   },
   "form": {

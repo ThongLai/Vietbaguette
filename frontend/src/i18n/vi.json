@@ -55,7 +55,12 @@
       "cancelledTab": "Đã hủy",
       "noActiveOrders": "Không có đơn hàng đang xử lý",
       "noCompletedOrders": "Chưa có đơn hàng hoàn thành",
-      "noCancelledOrders": "Không có đơn hàng đã hủy"
+      "noCancelledOrders": "Không có đơn hàng đã hủy",
+      "showing": "Hiển thị",
+      "noOrdersFound": "Không tìm thấy đơn hàng nào",
+      "noOrdersMatchFilter": "Không có đơn hàng nào phù hợp với bộ lọc của bạn",
+      "noOrdersYet": "Bạn chưa có đơn hàng nào",
+      "clearFilters": "Xóa bộ lọc"
     }
   },
   "form": {

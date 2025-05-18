@@ -33,6 +33,7 @@ import {
   AlertTriangle,
   RefreshCw 
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 const Orders = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -71,14 +72,25 @@ const Orders = () => {
   
   // Filter orders based on criteria
   const filteredOrders = allOrders.filter(order => {
-    // Search filter (search by ID, customer name, or table number)
+    // Search filter (search by ID, customer name, table number, item names, or order date)
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
       const idMatch = order.id.toLowerCase().includes(searchLower);
       const nameMatch = order.customerName?.toLowerCase().includes(searchLower) || false;
       const tableMatch = order.tableNumber?.toString().includes(searchLower) || false;
       
-      if (!idMatch && !nameMatch && !tableMatch) {
+      // Check if any item name matches the search query
+      const itemNameMatch = order.items.some(item => 
+        item.menuItem.name.toLowerCase().includes(searchLower)
+      );
+      
+      // Format and check creation date
+      const orderDate = new Date(order.createdAt);
+      const formattedDate = format(orderDate, 'yyyy-MM-dd');
+      const dateMatch = formattedDate.includes(searchLower);
+      
+      // Return false if none of the fields match
+      if (!idMatch && !nameMatch && !tableMatch && !itemNameMatch && !dateMatch) {
         return false;
       }
     }
@@ -143,7 +155,7 @@ const Orders = () => {
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.orders.activeTab')}</p>
               <p className="text-2xl font-bold">{orderStatCounts.active}</p>
             </div>
             <Clock className="h-10 w-10 text-orange-500 opacity-80" />
@@ -153,7 +165,7 @@ const Orders = () => {
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Completed</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.orders.completedTab')}</p>
               <p className="text-2xl font-bold">{orderStatCounts.completed}</p>
             </div>
             <Check className="h-10 w-10 text-green-500 opacity-80" />
@@ -163,7 +175,7 @@ const Orders = () => {
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Cancelled</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.orders.cancelledTab')}</p>
               <p className="text-2xl font-bold">{orderStatCounts.cancelled}</p>
             </div>
             <AlertTriangle className="h-10 w-10 text-red-500 opacity-80" />
@@ -208,11 +220,11 @@ const Orders = () => {
             {filteredOrders.length === 0 ? (
               <div className="text-center py-10">
                 <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-                <h3 className="text-lg font-medium mb-1">No orders found</h3>
+                <h3 className="text-lg font-medium mb-1">{t('dashboard.orders.noOrdersFound')}</h3>
                 <p className="text-muted-foreground mb-4">
                   {searchQuery || filterStatus !== 'all'
-                    ? "No orders match your current filters" 
-                    : "There are no orders in the system yet"}
+                    ? t('dashboard.orders.noOrdersMatchFilter') 
+                    : t('dashboard.orders.noOrdersYet')}
                 </p>
                 {(searchQuery || filterStatus !== 'all') && (
                   <Button 
@@ -222,14 +234,14 @@ const Orders = () => {
                       setFilterStatus('all');
                     }}
                   >
-                    Clear Filters
+                    {t('dashboard.orders.clearFilters')}
                   </Button>
                 )}
               </div>
             ) : (
               <div className="space-y-6">
                 <p className="text-sm text-muted-foreground">
-                  Showing {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'}
+                  {t('dashboard.orders.showing')} {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'}
                 </p>
                 <OrderList 
                   searchResults={filteredOrders} 
