@@ -93,6 +93,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [cancelledOrders, setCancelledOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   // Fetch menu on mount
   useEffect(() => {
@@ -158,11 +159,13 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchOrders = async () => {
+    // Skip if already fetching to prevent duplicate calls
+    if (isLoadingOrders) return;
+    
+    setIsLoadingOrders(true);
     try {
       // Get JWT token from localStorage with the correct key
       const token = localStorage.getItem('viet_baguette_token');
-      // Log token for debugging (remove in production)
-      console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
       
       // Fetch active orders
       const activeResponse = await fetch('/api/orders?status=ACTIVE', {
@@ -199,6 +202,14 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
+
+    //   // Show only one error toast
+    //   toast.error('Failed to load orders', { 
+    //     id: 'orders-fetch-error',
+    //     duration: 3000
+    //   });
+    // } finally {
+    //   setIsLoadingOrders(false);
     }
   };
 

@@ -62,9 +62,24 @@ const Orders = () => {
   }, [isAuthenticated, isLoading, navigate]);
 
   const handleRefresh = async () => {
+    // Prevent multiple refreshes at once
+    // if (isRefreshing) return;
+    
     setIsRefreshing(true);
-    await fetchOrders();
-    setTimeout(() => setIsRefreshing(false), 500); // Visual feedback
+    try {
+      await fetchOrders();
+      setIsRefreshing(false);
+    } catch (error) {
+      console.error('Error refreshing orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh orders",
+        variant: "destructive",
+      });
+    } finally {
+      // Always stop spinning, even if fetchOrders fails
+      setIsRefreshing(false);
+    }
   };
 
   // Get all orders (active and completed)
