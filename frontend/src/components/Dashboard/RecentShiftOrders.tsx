@@ -68,7 +68,7 @@ const OrderTimer = ({ createdAt }: { createdAt: string }) => {
 };
 
 const RecentShiftOrders = () => {
-  const { orders, activeOrders, completedOrders, cancelledOrders, updateOrderStatus, fetchOrders } = useOrders();
+  const { orders, activeOrders, completedOrders, cancelledOrders, updateOrderStatus, fetchOrders, updateItemStatus } = useOrders();
   const [filterTab, setFilterTab] = useState('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -151,14 +151,8 @@ const RecentShiftOrders = () => {
   const handleItemStatusChange = async (orderId: string, itemId: string, status: ItemStatus) => {
     try {
       setIsLoading(true);
-      // Use direct API call since updateOrderItemStatus doesn't exist in context
-      await fetch(`/api/orders/${orderId}/items/${itemId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
+      // Use the context method instead of direct API call
+      await updateItemStatus(orderId, itemId, status);
       setIsLoading(false);
       // Trigger refresh after successful update
       triggerRefresh();
