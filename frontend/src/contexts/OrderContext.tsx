@@ -62,6 +62,7 @@ interface OrderContextType {
   isMenuLoading: boolean;
   activeOrders: Order[];
   completedOrders: Order[];
+  fetchOrders: () => Promise<void>;
   addOrder: (orderData: { 
     items: { 
       menuItemId: string; 
@@ -79,6 +80,7 @@ interface OrderContextType {
   updateItemStatus: (orderId: string, itemId: string, status: OrderItem['status']) => Promise<void>;
   markOrderUrgent: (orderId: string, isUrgent: boolean) => Promise<void>;
   markOrderVIP: (orderId: string, isVIP: boolean) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -247,21 +249,9 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
       if (!response.ok) throw new Error('Failed to update order status');
 
-      // Handle completed/cancelled orders
-      if (status === 'COMPLETED' || status === 'CANCELLED') {
-        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
-        const order = activeOrders.find(o => o.id === orderId);
-        if (order) {
-          setCompletedOrders(prev => [{ ...order, status }, ...prev]);
-        }
-      } else {
-        setActiveOrders(prev =>
-          prev.map(order =>
-            order.id === orderId ? { ...order, status } : order
-          )
-        );
-      }
-
+      // To prevent duplication, let's fetch the updated order list rather than manipulating the state
+      await fetchOrders();
+      
       toast.success(`Order status updated to ${status.toLowerCase()}`);
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -382,6 +372,39 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const deleteOrder = async (orderId: string) => {
+    try {
+      const token = localStorage.getItem('viet_baguette_token');
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+
+      if (!response.ok) {
+        // Try to get more error details from the response
+        const errorData = await response.json().catch(() => null);
+        console.error('Delete order error details:', errorData);
+        throw new Error(`Failed to delete order: ${response.status} ${response.statusText}`);
+      }
+
+      // Remove from both active and completed orders
+      setActiveOrders(prev => prev.filter(order => order.id !== orderId));
+      setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+
+      toast.success('Order deleted successfully');
+      
+      // Force reload the page to ensure all UI components are updated
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast.error('Failed to delete order');
+      throw error; // Re-throw to handle in the component
+    }
+  };
+
   return (
     <OrderContext.Provider
       value={{
@@ -389,11 +412,13 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         isMenuLoading,
         activeOrders,
         completedOrders,
+        fetchOrders,
         addOrder,
         updateOrderStatus,
         updateItemStatus,
         markOrderUrgent,
         markOrderVIP,
+        deleteOrder,
       }}
     >
       {children}

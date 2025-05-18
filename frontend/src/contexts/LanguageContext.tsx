@@ -1,4 +1,3 @@
-
 import { createContext, useState, useContext, ReactNode } from 'react';
 
 type Language = 'en' | 'vi';
@@ -45,6 +44,9 @@ const translations = {
     'dashboard.orders.modify': 'Modify',
     'dashboard.orders.markDone': 'Mark as Done',
     'dashboard.orders.urgent': 'Urgent',
+    'dashboard.orders.description': 'Manage and track all customer orders',
+    'dashboard.orders.management': 'Order Management',
+    'dashboard.orders.manageDescription': 'View, filter, and manage all orders in one place',
     
     // Form labels
     'form.email': 'Email Address',
@@ -120,6 +122,9 @@ const translations = {
     'dashboard.orders.modify': 'Chỉnh sửa',
     'dashboard.orders.markDone': 'Đánh dấu hoàn thành',
     'dashboard.orders.urgent': 'Khẩn cấp',
+    'dashboard.orders.description': 'Quản lý và theo dõi tất cả đơn hàng của khách hàng',
+    'dashboard.orders.management': 'Quản lý đơn hàng',
+    'dashboard.orders.manageDescription': 'Xem, lọc và quản lý tất cả đơn đặt hàng tại một nơi',
     
     // Form labels
     'form.email': 'Địa chỉ Email',

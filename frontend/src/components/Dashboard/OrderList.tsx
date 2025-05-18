@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFo
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
   switch (status) {
@@ -44,12 +46,21 @@ const ItemStatusBadge = ({ status }: { status: OrderItem['status'] }) => {
   }
 };
 
-const OrderCard = ({ order }: { order: Order }) => {
-  const { updateOrderStatus, updateItemStatus, markOrderUrgent, markOrderVIP } = useOrders();
+const OrderCard = ({ 
+  order, 
+  useDropdownForStatus = false,
+  onStatusChange
+}: { 
+  order: Order;
+  useDropdownForStatus?: boolean;
+  onStatusChange?: (orderId: string, newStatus: string) => Promise<void>;
+}) => {
+  const { updateOrderStatus, updateItemStatus, markOrderUrgent, markOrderVIP, deleteOrder } = useOrders();
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
   const [modifiedOrder, setModifiedOrder] = useState<Order | null>(null);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   // Clone the order for modification
   const openModifyDialog = () => {
@@ -57,8 +68,17 @@ const OrderCard = ({ order }: { order: Order }) => {
     setIsModifyDialogOpen(true);
   };
 
-  const handleOrderStatusChange = (status: Order['status']) => {
-    updateOrderStatus(order.id, status);
+  const handleOrderStatusChange = async (status: Order['status']) => {
+    if (useDropdownForStatus && onStatusChange) {
+      setIsChangingStatus(true);
+      try {
+        await onStatusChange(order.id, status);
+      } finally {
+        setIsChangingStatus(false);
+      }
+    } else {
+      updateOrderStatus(order.id, status);
+    }
   };
 
   const handleItemStatusChange = (itemId: string, status: OrderItem['status']) => {
@@ -153,11 +173,27 @@ const OrderCard = ({ order }: { order: Order }) => {
     try {
       if (!modifiedOrder) return;
       
-      // Currently, this is a placeholder for the actual API call
-      // In a real implementation, you would call an API endpoint to update the order
-      console.log('Saving modified order:', modifiedOrder);
+      // First update the order status if changed
+      if (modifiedOrder.status !== order.status) {
+        await updateOrderStatus(order.id, modifiedOrder.status);
+      }
       
-      // For now, just close the dialog and show a success message
+      // Update urgent flag if changed
+      if (modifiedOrder.isUrgent !== order.isUrgent) {
+        await markOrderUrgent(order.id, modifiedOrder.isUrgent || false);
+      }
+      
+      // Update VIP flag if changed
+      if (modifiedOrder.isVIP !== order.isVIP) {
+        await markOrderVIP(order.id, modifiedOrder.isVIP || false);
+      }
+      
+      // Update order details (customer name, table number) and item modifications
+      // This would be a separate API call in a real implementation
+      console.log('Order details to save:', modifiedOrder);
+      
+      // For table number, customer name, and item changes, you'd need a dedicated endpoint
+      // For now, we'll simulate success
       toast({
         title: "Order Updated",
         description: `Order #${order.id.slice(-4)} has been updated successfully`,
@@ -167,8 +203,7 @@ const OrderCard = ({ order }: { order: Order }) => {
       // Close the dialog
       setIsModifyDialogOpen(false);
       
-      // In a real implementation, you would refresh the order list after the update
-      // For now, we'll just reload the page to simulate that
+      // Refresh orders to get the latest state
       window.location.reload();
     } catch (error) {
       console.error('Error updating order:', error);
@@ -184,21 +219,22 @@ const OrderCard = ({ order }: { order: Order }) => {
   const handleDeleteOrder = async () => {
     if (window.confirm('Are you sure you want to delete this entire order? This action cannot be undone.')) {
       try {
-        // For now, just cancel the order instead of deleting it
-        updateOrderStatus(order.id, 'CANCELLED');
+        setIsModifyDialogOpen(false); // Close dialog first to prevent multiple attempts
         
         toast({
-          title: "Order Cancelled",
-          description: `Order #${order.id.slice(-4)} has been cancelled`,
+          title: "Deleting Order...",
+          description: `Order #${order.id.slice(-4)} is being deleted`,
           variant: "default",
         });
         
-        setIsModifyDialogOpen(false);
+        await deleteOrder(order.id);
+        
+        // No need to show another toast or reload here as the deleteOrder function will handle that
       } catch (error) {
-        console.error('Error cancelling order:', error);
+        console.error('Error deleting order:', error);
         toast({
-          title: "Cancellation Failed",
-          description: "There was an error cancelling the order. Please try again.",
+          title: "Deletion Failed",
+          description: "There was an error deleting the order. Please try again.",
           variant: "destructive",
         });
       }
@@ -238,7 +274,25 @@ const OrderCard = ({ order }: { order: Order }) => {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <OrderStatusBadge status={order.status} />
+              {useDropdownForStatus ? (
+                <Select 
+                  value={order.status} 
+                  onValueChange={handleOrderStatusChange} 
+                  disabled={isChangingStatus}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="PREPARING">Preparing</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <OrderStatusBadge status={order.status} />
+              )}
             </div>
           </div>
         </CardHeader>
@@ -303,55 +357,11 @@ const OrderCard = ({ order }: { order: Order }) => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {order.status !== 'CANCELLED' && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleOrderStatusChange('CANCELLED')}
-                className="flex-1"
-              >
-                <X className="mr-1 h-4 w-4" />
-                {t('dashboard.orders.cancel')}
-              </Button>
-            )}
-            
-            {order.status !== 'COMPLETED' && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleOrderStatusChange('COMPLETED')}
-                className="flex-1"
-              >
-                <Check className="mr-1 h-4 w-4" />
-                {t('dashboard.orders.markDone')}
-              </Button>
-            )}
-            
-            <Button 
-              variant={order.isUrgent ? "destructive" : "outline"} 
-              size="sm"
-              onClick={handleToggleUrgent}
-              className="flex-1"
-            >
-              <AlertTriangle className="mr-1 h-4 w-4" />
-              {t('dashboard.orders.urgent')}
-            </Button>
-            
-            <Button 
-              variant={order.isVIP ? "secondary" : "outline"} 
-              size="sm"
-              onClick={handleToggleVIP}
-              className="flex-1"
-            >
-              <UserCheck className="mr-1 h-4 w-4" />
-              VIP
-            </Button>
-            
             <Button 
               variant="outline"
               size="sm"
               onClick={handleModifyOrder}
-              className="flex-1"
+              className="w-full"
             >
               <Edit className="mr-1 h-4 w-4" />
               {t('dashboard.orders.modify')}
@@ -370,7 +380,7 @@ const OrderCard = ({ order }: { order: Order }) => {
           {modifiedOrder && (
             <div className="space-y-6">
               {/* Order Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="table-number">Table Number</Label>
                   <Input 
@@ -390,6 +400,65 @@ const OrderCard = ({ order }: { order: Order }) => {
                     onChange={(e) => setModifiedOrder({
                       ...modifiedOrder,
                       customerName: e.target.value || undefined
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="order-status">Order Status</Label>
+                  <Select 
+                    value={modifiedOrder.status}
+                    onValueChange={(value) => setModifiedOrder({
+                      ...modifiedOrder,
+                      status: value as Order['status']
+                    })}
+                  >
+                    <SelectTrigger id="order-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="PREPARING">Preparing</SelectItem>
+                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Order Flags */}
+              <div className="flex items-center space-x-6 pt-2">
+                <div className="flex items-center space-x-2">
+                  <label 
+                    htmlFor="urgent-toggle"
+                    className="text-sm font-medium flex items-center cursor-pointer"
+                  >
+                    <AlertTriangle className="mr-1.5 h-4 w-4 text-red-500" />
+                    Mark as Urgent
+                  </label>
+                  <Switch 
+                    id="urgent-toggle"
+                    checked={modifiedOrder.isUrgent || false}
+                    onCheckedChange={(checked) => setModifiedOrder({
+                      ...modifiedOrder,
+                      isUrgent: checked
+                    })}
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <label 
+                    htmlFor="vip-toggle"
+                    className="text-sm font-medium flex items-center cursor-pointer"
+                  >
+                    <UserCheck className="mr-1.5 h-4 w-4 text-purple-500" />
+                    VIP Customer
+                  </label>
+                  <Switch 
+                    id="vip-toggle"
+                    checked={modifiedOrder.isVIP || false}
+                    onCheckedChange={(checked) => setModifiedOrder({
+                      ...modifiedOrder,
+                      isVIP: checked
                     })}
                   />
                 </div>
@@ -472,7 +541,7 @@ const OrderCard = ({ order }: { order: Order }) => {
               onClick={handleDeleteOrder}
             >
               <Trash className="mr-2 h-4 w-4" />
-              Cancel Entire Order
+              Delete Order
             </Button>
             <div className="flex space-x-2">
               <DialogClose asChild>
@@ -491,67 +560,168 @@ const OrderCard = ({ order }: { order: Order }) => {
   );
 };
 
-const OrderList = () => {
+const OrderList = ({ 
+  searchResults,
+  useDropdownForStatus = false,
+  onStatusChange 
+}: { 
+  searchResults?: Order[]; 
+  useDropdownForStatus?: boolean;
+  onStatusChange?: (orderId: string, newStatus: string) => Promise<void>;
+}) => {
   const { activeOrders, completedOrders } = useOrders();
   const { t } = useLanguage();
 
-  const pendingOrders = activeOrders.filter(order => order.status === 'PENDING');
-  const preparingOrders = activeOrders.filter(order => order.status === 'PREPARING');
+  // Use provided searchResults if available, otherwise use default orders from context
+  const ordersToDisplay = searchResults || undefined;
+  
+  // Helper function to filter orders by unique ID
+  const getUniqueOrders = (orders: Order[]) => {
+    const uniqueOrderMap = new Map<string, Order>();
+    orders.forEach(order => {
+      uniqueOrderMap.set(order.id, order);
+    });
+    return Array.from(uniqueOrderMap.values());
+  };
+  
+  // If we're using the default orders from context
+  const pendingOrders = getUniqueOrders(
+    ordersToDisplay 
+      ? ordersToDisplay.filter(order => order.status === 'PENDING')
+      : activeOrders.filter(order => order.status === 'PENDING')
+  );
+    
+  const preparingOrders = getUniqueOrders(
+    ordersToDisplay 
+      ? ordersToDisplay.filter(order => order.status === 'PREPARING') 
+      : activeOrders.filter(order => order.status === 'PREPARING')
+  );
+    
+  const displayedCompletedOrders = getUniqueOrders(
+    ordersToDisplay 
+      ? ordersToDisplay.filter(order => order.status === 'COMPLETED')
+      : completedOrders
+  );
+    
+  // Only show the tabs if we're not using searchResults
+  const showTabs = !searchResults;
   
   return (
     <div>
-      <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid grid-cols-2 mb-4">
-          <TabsTrigger value="active">
-            {t('dashboard.orders.active')} ({activeOrders.length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            {t('dashboard.orders.completed')} ({completedOrders.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="active" className="mt-0">
-          {activeOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No active orders</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[calc(100vh-240px)] pr-4">
-              {pendingOrders.length > 0 && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold mb-3">Pending</h2>
-                  {pendingOrders.map(order => (
-                    <OrderCard key={order.id} order={order} />
-                  ))}
-                </div>
-              )}
-              
-              {preparingOrders.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-3">Preparing</h2>
-                  {preparingOrders.map(order => (
-                    <OrderCard key={order.id} order={order} />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="completed" className="mt-0">
-          {completedOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No completed orders yet</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[calc(100vh-240px)] pr-4">
-              {completedOrders.map(order => (
-                <OrderCard key={order.id} order={order} />
+      {showTabs ? (
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="active">
+              {t('dashboard.orders.active')} ({activeOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              {t('dashboard.orders.completed')} ({completedOrders.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="mt-0">
+            {activeOrders.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No active orders</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-240px)] pr-4">
+                {pendingOrders.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-3">Pending</h2>
+                    {pendingOrders.map(order => (
+                      <OrderCard 
+                        key={order.id} 
+                        order={order} 
+                        useDropdownForStatus={useDropdownForStatus}
+                        onStatusChange={onStatusChange}
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                {preparingOrders.length > 0 && (
+                  <div>
+                    <h2 className="text-lg font-semibold mb-3">Preparing</h2>
+                    {preparingOrders.map(order => (
+                      <OrderCard 
+                        key={order.id} 
+                        order={order} 
+                        useDropdownForStatus={useDropdownForStatus}
+                        onStatusChange={onStatusChange}
+                      />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="completed" className="mt-0">
+            {completedOrders.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No completed orders yet</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-240px)] pr-4">
+                {completedOrders.map(order => (
+                  <OrderCard 
+                    key={order.id} 
+                    order={order} 
+                    useDropdownForStatus={useDropdownForStatus}
+                    onStatusChange={onStatusChange}
+                  />
+                ))}
+              </ScrollArea>
+            )}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        // When using searchResults, display orders grouped by status
+        <ScrollArea className="h-[calc(100vh-340px)] pr-4">
+          {pendingOrders.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3">Pending</h2>
+              {pendingOrders.map(order => (
+                <OrderCard 
+                  key={order.id} 
+                  order={order} 
+                  useDropdownForStatus={useDropdownForStatus}
+                  onStatusChange={onStatusChange}
+                />
               ))}
-            </ScrollArea>
+            </div>
           )}
-        </TabsContent>
-      </Tabs>
+          
+          {preparingOrders.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3">Preparing</h2>
+              {preparingOrders.map(order => (
+                <OrderCard 
+                  key={order.id} 
+                  order={order} 
+                  useDropdownForStatus={useDropdownForStatus}
+                  onStatusChange={onStatusChange}
+                />
+              ))}
+            </div>
+          )}
+          
+          {displayedCompletedOrders.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold mb-3">Completed</h2>
+              {displayedCompletedOrders.map(order => (
+                <OrderCard 
+                  key={order.id} 
+                  order={order} 
+                  useDropdownForStatus={useDropdownForStatus}
+                  onStatusChange={onStatusChange}
+                />
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      )}
     </div>
   );
 };

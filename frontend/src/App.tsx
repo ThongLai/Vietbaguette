@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import MenuManagement from "./pages/MenuManagement";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import Menu from "@/pages/Menu";
+import Orders from "./pages/Orders";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
                       <Route path="/login" element={<Login />} />
                       <Route path="/register" element={<Register />} />
                       <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/dashboard/orders" element={<Orders />} />
                       <Route path="/dashboard/menu-management" element={<MenuManagement />} />
                       <Route path="/dashboard/employees" element={<EmployeeManagement />} />
                       <Route path="/settings" element={<Settings />} />
