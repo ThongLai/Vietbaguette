@@ -1,4 +1,23 @@
 {
+  "nav": {
+    "home": "Home",
+    "menu": "Menu",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "home": {
+    "hero": {
+      "title": "Authentic Vietnamese Street Food",
+      "subtitle": "Experience the flavors of Vietnam in Halifax"
+    },
+    "specialties": {
+      "title": "Our Specialties",
+      "desc": "Visit Viet Baguette, an outpost in Halifax filled with Vietnamese street foods & bubble teas. Follow our journey on a culinary tour of Vietnam where every cup of dripping coffee will remind you of a leisurely morning in a vibrant alleyway or a refreshing glass of smoothie topped with fresh fruits."
+    }
+  },
   "menu": {
     "title": "Our Menu",
     "categories": {
@@ -8,11 +27,74 @@
       "sauces": "Sauces & Dips",
       "drinks": "Soft Drinks",
       "coffee": "Coffee & Tea",
-      "bubble-tea": "Bubble Tea"
+      "bubble-tea": "Bubble Tea",
+      "desserts": "Desserts"
     },
     "badges": {
       "vegetarian": "Vegetarian",
       "spicy": "Spicy"
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome Back",
+    "orders": {
+      "dashboard": "Dashboard",
+      "title": "Orders",
+      "new": "New Order",
+      "active": "Active Orders",
+      "completed": "Completed Orders",
+      "cancel": "Cancel",
+      "modify": "Modify",
+      "markDone": "Mark as Done",
+      "urgent": "Urgent",
+      "description": "Manage and track all customer orders",
+      "management": "Order Management",
+      "manageDescription": "View, filter, and manage all orders in one place",
+      "activeTab": "Active",
+      "completedTab": "Completed"
+    }
+  },
+  "form": {
+    "email": "Email Address",
+    "password": "Password",
+    "login": "Login",
+    "forgotPassword": "Forgot Password?",
+    "name": "Name",
+    "phone": "Phone Number"
+  },
+  "staff": {
+    "schedule": "Schedule",
+    "unavailability": "Set Unavailability",
+    "communication": "Communication",
+    "notifications": "Notifications",
+    "orders": "Orders"
+  },
+  "admin": {
+    "employees": "Employees",
+    "menu": "Menu Management",
+    "statistics": "Statistics",
+    "settings": "Settings",
+    "addEmployee": "Add Employee"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "search": "Search"
+  },
+  "settings": {
+    "title": "Theme",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "languageTitle": "Language",
+    "language": {
+      "english": "English",
+      "vietnamese": "Vietnamese"
     }
   }
 }

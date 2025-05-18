@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "menu": "Thực đơn",
+    "about": "Giới thiệu",
+    "contact": "Liên hệ",
+    "login": "Đăng nhập",
+    "dashboard": "Bảng điều khiển",
+    "logout": "Đăng xuất"
+  },
+  "home": {
+    "hero": {
+      "title": "Ẩm thực đường phố Việt Nam",
+      "subtitle": "Trải nghiệm hương vị Việt Nam tại Halifax"
+    },
+    "specialties": {
+      "title": "Món đặc sản",
+      "desc": "Ghé thăm Viet Baguette, một điểm đến tại Halifax với đầy đủ món ăn đường phố Việt Nam và trà sữa. Theo chân chúng tôi trong hành trình ẩm thực Việt Nam, nơi mỗi tách cà phê phin sẽ gợi nhớ bạn về một buổi sáng nhàn nhã trong một con hẻm sôi động hoặc một ly sinh tố mát lạnh được trang trí với trái cây tươi."
+    }
+  },
+  "menu": {
+    "title": "Thực đơn",
+    "categories": {
+      "starters": "Khai vị",
+      "main": "Món chính",
+      "sides": "Món phụ",
+      "sauces": "Nước chấm & Sốt",
+      "drinks": "Đồ uống",
+      "coffee": "Cà phê & Trà",
+      "bubble-tea": "Trà sữa",
+      "desserts": "Tráng miệng"
+    },
+    "badges": {
+      "vegetarian": "Chay",
+      "spicy": "Cay"
+    }
+  },
+  "dashboard": {
+    "welcome": "Chào mừng trở lại",
+    "orders": {
+      "dashboard": "Bảng điều khiển",
+      "title": "Đơn hàng",
+      "new": "Đơn hàng mới",
+      "active": "Đơn hàng đang xử lý",
+      "completed": "Đơn hàng hoàn thành",
+      "cancel": "Hủy",
+      "modify": "Chỉnh sửa",
+      "markDone": "Đánh dấu hoàn thành",
+      "urgent": "Khẩn cấp",
+      "description": "Quản lý và theo dõi tất cả đơn hàng của khách hàng",
+      "management": "Quản lý đơn hàng",
+      "manageDescription": "Xem, lọc và quản lý tất cả đơn đặt hàng tại một nơi",
+      "activeTab": "Đang xử lý",
+      "completedTab": "Hoàn thành"
+    }
+  },
+  "form": {
+    "email": "Địa chỉ Email",
+    "password": "Mật khẩu",
+    "login": "Đăng nhập",
+    "forgotPassword": "Quên mật khẩu?",
+    "name": "Họ tên",
+    "phone": "Số điện thoại"
+  },
+  "staff": {
+    "schedule": "Lịch làm việc",
+    "unavailability": "Đặt thời gian không làm việc",
+    "communication": "Giao tiếp",
+    "notifications": "Thông báo",
+    "orders": "Đơn hàng"
+  },
+  "admin": {
+    "employees": "Nhân viên",
+    "menu": "Quản lý thực đơn",
+    "statistics": "Thống kê",
+    "settings": "Cài đặt",
+    "addEmployee": "Thêm nhân viên"
+  },
+  "actions": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "add": "Thêm",
+    "search": "Tìm kiếm"
+  },
+  "settings": {
+    "title": "Giao diện",
+    "theme": {
+      "light": "Sáng",
+      "dark": "Tối",
+      "system": "Hệ thống"
+    },
+    "languageTitle": "Ngôn ngữ",
+    "language": {
+      "english": "Tiếng Anh",
+      "vietnamese": "Tiếng Việt"
+    }
+  }
+} 
