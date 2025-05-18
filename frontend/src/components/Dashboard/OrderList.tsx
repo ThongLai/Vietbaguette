@@ -260,24 +260,15 @@ const OrderCard = ({
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {useDropdownForStatus ? (
-                <Select 
-                  value={order.status} 
-                  onValueChange={handleOrderStatusChange} 
-                  disabled={isChangingStatus}
-                >
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <OrderStatusBadge status={order.status} />
-              )}
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={handleModifyOrder}
+              >
+                <Edit className="mr-1 h-4 w-4" />
+                {t('dashboard.orders.modify')}
+              </Button>
+              <OrderStatusBadge status={order.status} />
             </div>
           </div>
         </CardHeader>
@@ -344,18 +335,6 @@ const OrderCard = ({
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={handleModifyOrder}
-              className="w-full"
-            >
-              <Edit className="mr-1 h-4 w-4" />
-              {t('dashboard.orders.modify')}
-            </Button>
           </div>
         </CardContent>
       </Card>
