@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MenuItem } from '@/types/menu'
-import { MenuCard } from '@/components/Menu/MenuCard'
+import { MenuCard } from '@/components/menu/MenuCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { motion } from 'framer-motion'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
