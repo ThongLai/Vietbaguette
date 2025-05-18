@@ -32,6 +32,10 @@ const updateOrderItemStatusSchema = z.object({
   status: z.enum(['PREPARING', 'COMPLETED', 'CANCELLED']),
 });
 
+const updateOrderItemQuantitySchema = z.object({
+  quantity: z.number().int().positive(),
+});
+
 // Get all orders
 export const getAllOrders = async (req: Request, res: Response) => {
   try {
@@ -563,5 +567,212 @@ export const updateOrderUrgency = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Update order urgency error:', error);
     res.status(500).json({ message: 'Server error updating order urgency' });
+  }
+};
+
+// Update order item quantity
+export const updateOrderItemQuantity = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const { orderId, itemId } = req.params;
+    
+    // Validate request body
+    const validation = updateOrderItemQuantitySchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: validation.error.errors,
+      });
+    }
+    
+    const { quantity } = validation.data;
+    
+    // Check if order and item exist
+    const existingItem = await prisma.orderItem.findFirst({
+      where: {
+        id: itemId,
+        orderId,
+      },
+      include: {
+        menuItem: true,
+      },
+    });
+    
+    if (!existingItem) {
+      return res.status(404).json({ message: 'Order item not found' });
+    }
+    
+    // Update item quantity and recalculate order total
+    const result = await prisma.$transaction(async (prismaTransaction) => {
+      // Update the item quantity
+      const updatedItem = await prismaTransaction.orderItem.update({
+        where: { id: itemId },
+        data: { quantity },
+        include: {
+          menuItem: true,
+          selectedOptions: {
+            include: {
+              menuOption: true,
+              optionChoice: true,
+            },
+          },
+        },
+      });
+      
+      // Get all items to recalculate the order total
+      const allItems = await prismaTransaction.orderItem.findMany({
+        where: {
+          orderId,
+          status: {
+            not: 'CANCELLED'
+          }
+        },
+        include: {
+          menuItem: true,
+          selectedOptions: {
+            include: {
+              optionChoice: true,
+            },
+          },
+        },
+      });
+      
+      // Calculate new total
+      let newTotal = 0;
+      for (const item of allItems) {
+        let itemPrice = item.menuItem.price * item.quantity;
+        
+        // Add option prices if any
+        if (item.selectedOptions.length > 0) {
+          for (const option of item.selectedOptions) {
+            if (option.optionChoice.price) {
+              itemPrice += option.optionChoice.price * item.quantity;
+            }
+          }
+        }
+        
+        newTotal += itemPrice;
+      }
+      
+      // Update the order total
+      const updatedOrder = await prismaTransaction.order.update({
+        where: { id: orderId },
+        data: { total: newTotal },
+        include: {
+          items: {
+            include: {
+              menuItem: true,
+              selectedOptions: {
+                include: {
+                  menuOption: true,
+                  optionChoice: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      
+      // Create notifications for all users
+      const users = await prismaTransaction.user.findMany({
+        select: { id: true },
+      });
+      
+      // Create notifications
+      await Promise.all(
+        users.map((user: any) => 
+          prismaTransaction.notification.create({
+            data: {
+              type: 'ORDER_UPDATED',
+              content: `Quantity updated for ${existingItem.menuItem.name} in order #${orderId.substring(0, 8)} to ${quantity}`,
+              orderId,
+              userId: user.id,
+            }
+          })
+        )
+      );
+      
+      return { item: updatedItem, order: updatedOrder };
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Update order item quantity error:', error);
+    res.status(500).json({ message: 'Server error updating order item quantity' });
+  }
+};
+
+// Delete an order
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const { id } = req.params;
+    
+    // Check if order exists
+    const existingOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: true,
+      },
+    });
+    
+    if (!existingOrder) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    // Delete order in a transaction
+    await prisma.$transaction(async (prismaTransaction) => {
+      // First delete all order items and their options
+      for (const item of existingOrder.items) {
+        // Delete selected options for this item
+        await prismaTransaction.selectedOption.deleteMany({
+          where: { orderItemId: item.id },
+        });
+      }
+      
+      // Then delete all order items
+      await prismaTransaction.orderItem.deleteMany({
+        where: { orderId: id },
+      });
+      
+      // Delete notifications related to this order
+      await prismaTransaction.notification.deleteMany({
+        where: { orderId: id },
+      });
+      
+      // Finally delete the order itself
+      await prismaTransaction.order.delete({
+        where: { id },
+      });
+      
+      // Create notifications for all users about deletion
+      const users = await prismaTransaction.user.findMany({
+        select: { id: true },
+      });
+      
+      // Create notifications about deletion
+      await Promise.all(
+        users.map((user: any) => 
+          prismaTransaction.notification.create({
+            data: {
+              type: 'ORDER_UPDATED',
+              content: `Order #${id.substring(0, 8)} has been deleted`,
+              userId: user.id,
+            }
+          })
+        )
+      );
+    });
+    
+    res.status(200).json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('Delete order error:', error);
+    res.status(500).json({ message: 'Server error deleting order' });
   }
 }; 
