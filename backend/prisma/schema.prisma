@@ -87,7 +87,7 @@ model OptionChoice {
 // Order models
 model Order {
   id            String      @id @default(uuid())
-  status        OrderStatus @default(PENDING)
+  status        OrderStatus @default(ACTIVE)
   total         Float
   isUrgent      Boolean     @default(false)
   tableNumber   Int?
@@ -108,7 +108,7 @@ model OrderItem {
   menuItem        MenuItem        @relation(fields: [menuItemId], references: [id])
   quantity        Int
   notes           String?
-  status          OrderItemStatus @default(PENDING)
+  status          OrderItemStatus @default(PREPARING)
   selectedOptions SelectedOption[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -128,14 +128,12 @@ model SelectedOption {
 }
 
 enum OrderStatus {
-  PENDING
-  PREPARING
+  ACTIVE
   COMPLETED
   CANCELLED
 }
 
 enum OrderItemStatus {
-  PENDING
   PREPARING
   COMPLETED
   CANCELLED

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { z } from 'zod';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, OrderStatus, OrderItemStatus } from '@prisma/client';
 
 // Validation schemas
 const selectedOptionSchema = z.object({
@@ -25,11 +25,11 @@ const createOrderSchema = z.object({
 });
 
 const updateOrderStatusSchema = z.object({
-  status: z.enum(['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED']),
+  status: z.enum(['ACTIVE', 'COMPLETED', 'CANCELLED']),
 });
 
 const updateOrderItemStatusSchema = z.object({
-  status: z.enum(['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED']),
+  status: z.enum(['PREPARING', 'COMPLETED', 'CANCELLED']),
 });
 
 // Get all orders
@@ -41,7 +41,7 @@ export const getAllOrders = async (req: Request, res: Response) => {
     const where: any = {};
     
     // Filter by status if provided
-    if (status && ['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED'].includes(status as string)) {
+    if (status && ['ACTIVE', 'COMPLETED', 'CANCELLED'].includes(status as string)) {
       where.status = status;
     }
     
@@ -302,7 +302,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       });
     }
     
-    const { status } = validation.data;
+    const { status } = validation.data as { status: OrderStatus };
     
     // Check if order exists
     const existingOrder = await prisma.order.findUnique({
@@ -394,7 +394,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       });
     }
     
-    const { status } = validation.data;
+    const { status } = validation.data as { status: OrderItemStatus };
     
     // Check if order and item exist
     const existingItem = await prisma.orderItem.findFirst({
@@ -429,25 +429,32 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       });
       
       // Check if all items are completed or cancelled to update the order status
-      const otherItems = await prismaTransaction.orderItem.findMany({
+      const allItems = await prismaTransaction.orderItem.findMany({
         where: {
           orderId,
-          id: { not: itemId },
         },
       });
       
-      // If all other items have the same status, update the order
-      const allItemsHaveSameStatus = otherItems.length === 0 || 
-        otherItems.every((item: any) => item.status === status);
+      let orderStatus: OrderStatus = 'ACTIVE';
       
-      let updatedOrder = null;
-      
-      if (allItemsHaveSameStatus) {
-        updatedOrder = await prismaTransaction.order.update({
-          where: { id: orderId },
-          data: { status },
-        });
+      // If ALL items are cancelled, mark the order as cancelled
+      if (allItems.every(item => item.status === 'CANCELLED')) {
+        orderStatus = 'CANCELLED';
       }
+      // If ALL items are completed, mark the order as completed 
+      else if (allItems.every(item => item.status === 'COMPLETED')) {
+        orderStatus = 'COMPLETED';
+      }
+      // Otherwise, keep it as active
+      else {
+        orderStatus = 'ACTIVE';
+      }
+      
+      // Update the order status
+      const updatedOrder = await prismaTransaction.order.update({
+        where: { id: orderId },
+        data: { status: orderStatus },
+      });
       
       // Create notifications for all users
       const users = await prismaTransaction.user.findMany({

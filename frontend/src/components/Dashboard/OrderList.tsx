@@ -20,10 +20,8 @@ import { cn } from '@/lib/utils';
 
 const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
   switch (status) {
-    case 'PENDING':
-      return <Badge variant="outline" className="bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">Pending</Badge>;
-    case 'PREPARING':
-      return <Badge variant="outline" className="bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">Preparing</Badge>;
+    case 'ACTIVE':
+      return <Badge variant="outline" className="bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">Active</Badge>;
     case 'COMPLETED':
       return <Badge variant="outline" className="bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400">Completed</Badge>;
     case 'CANCELLED':
@@ -35,8 +33,6 @@ const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
 
 const ItemStatusBadge = ({ status }: { status: OrderItem['status'] }) => {
   switch (status) {
-    case 'PENDING':
-      return <Badge variant="outline" className="bg-orange-50 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">Pending</Badge>;
     case 'PREPARING':
       return <Badge variant="outline" className="bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">Preparing</Badge>;
     case 'COMPLETED':
@@ -274,8 +270,7 @@ const OrderCard = ({
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="PREPARING">Preparing</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
                     <SelectItem value="COMPLETED">Completed</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   </SelectContent>
@@ -328,14 +323,19 @@ const OrderCard = ({
                     <div className="flex items-center">
                       <ItemStatusBadge status={item.status} />
                       <div className="ml-2 flex space-x-1">
-                        {item.status !== 'COMPLETED' && (
+                        {item.status !== 'PREPARING' && item.status !== 'CANCELLED' && (
                           <Button size="icon" variant="ghost" onClick={() => handleItemStatusChange(item.id, 'PREPARING')}>
                             <Clock className="h-4 w-4" />
                           </Button>
                         )}
-                        {item.status !== 'COMPLETED' && (
+                        {item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && (
                           <Button size="icon" variant="ghost" onClick={() => handleItemStatusChange(item.id, 'COMPLETED')}>
                             <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {item.status !== 'CANCELLED' && (
+                          <Button size="icon" variant="ghost" onClick={() => handleItemStatusChange(item.id, 'CANCELLED')}>
+                            <X className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -406,8 +406,7 @@ const OrderCard = ({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="PREPARING">Preparing</SelectItem>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
                       <SelectItem value="COMPLETED">Completed</SelectItem>
                       <SelectItem value="CANCELLED">Cancelled</SelectItem>
                     </SelectContent>
@@ -493,6 +492,36 @@ const OrderCard = ({
                             rows={2}
                           />
                         </div>
+
+                        {/* Order Item Status Select */}
+                        {item.status !== modifiedOrder.items[index].status && (
+                          <div className="mt-2">
+                            <Label htmlFor={`item-${index}-status`}>Status</Label>
+                            <Select 
+                              value={modifiedOrder.items[index].status}
+                              onValueChange={(value) => {
+                                const updatedItems = [...modifiedOrder.items];
+                                updatedItems[index] = {
+                                  ...updatedItems[index],
+                                  status: value as OrderItem['status']
+                                };
+                                setModifiedOrder({
+                                  ...modifiedOrder,
+                                  items: updatedItems
+                                });
+                              }}
+                            >
+                              <SelectTrigger id={`item-${index}-status`}>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PREPARING">Preparing</SelectItem>
+                                <SelectItem value="COMPLETED">Completed</SelectItem>
+                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -557,19 +586,13 @@ const OrderList = ({
   };
   
   // If we're using the default orders from context
-  const pendingOrders = getUniqueOrders(
+  const activeOrdersList = getUniqueOrders(
     ordersToDisplay 
-      ? ordersToDisplay.filter(order => order.status === 'PENDING')
-      : activeOrders.filter(order => order.status === 'PENDING')
+      ? ordersToDisplay.filter(order => order.status === 'ACTIVE')
+      : activeOrders.filter(order => order.status === 'ACTIVE')
   );
     
-  const preparingOrders = getUniqueOrders(
-    ordersToDisplay 
-      ? ordersToDisplay.filter(order => order.status === 'PREPARING') 
-      : activeOrders.filter(order => order.status === 'PREPARING')
-  );
-    
-  const displayedCompletedOrders = getUniqueOrders(
+  const completedOrdersList = getUniqueOrders(
     ordersToDisplay 
       ? ordersToDisplay.filter(order => order.status === 'COMPLETED')
       : completedOrders
@@ -579,43 +602,25 @@ const OrderList = ({
   const showTabs = !searchResults;
   
   return (
-    <div>
+    <div className="w-full">
       {showTabs ? (
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="active">
-              {t('dashboard.orders.active')} ({activeOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              {t('dashboard.orders.completed')} ({completedOrders.length})
-            </TabsTrigger>
+          <TabsList className="w-full justify-start mb-4">
+            <TabsTrigger value="active">{t('dashboard.orders.activeTab')}</TabsTrigger>
+            <TabsTrigger value="completed">{t('dashboard.orders.completedTab')}</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="active" className="mt-0">
-            {activeOrders.length === 0 ? (
+          <TabsContent value="active">
+            {activeOrdersList.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No active orders</p>
+                <p className="text-muted-foreground">No active orders at the moment</p>
               </div>
             ) : (
               <ScrollArea className="h-[calc(100vh-240px)] pr-4">
-                {pendingOrders.length > 0 && (
+                {activeOrdersList.length > 0 && (
                   <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-3">Pending</h2>
-                    {pendingOrders.map(order => (
-                      <OrderCard 
-                        key={order.id} 
-                        order={order} 
-                        useDropdownForStatus={useDropdownForStatus}
-                        onStatusChange={onStatusChange}
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                {preparingOrders.length > 0 && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-3">Preparing</h2>
-                    {preparingOrders.map(order => (
+                    <h2 className="text-lg font-semibold mb-3">Active</h2>
+                    {activeOrdersList.map(order => (
                       <OrderCard 
                         key={order.id} 
                         order={order} 
@@ -629,14 +634,14 @@ const OrderList = ({
             )}
           </TabsContent>
           
-          <TabsContent value="completed" className="mt-0">
-            {completedOrders.length === 0 ? (
+          <TabsContent value="completed">
+            {completedOrdersList.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No completed orders yet</p>
               </div>
             ) : (
               <ScrollArea className="h-[calc(100vh-240px)] pr-4">
-                {completedOrders.map(order => (
+                {completedOrdersList.map(order => (
                   <OrderCard 
                     key={order.id} 
                     order={order} 
@@ -651,10 +656,10 @@ const OrderList = ({
       ) : (
         // When using searchResults, display orders grouped by status
         <ScrollArea className="h-[calc(100vh-340px)] pr-4">
-          {pendingOrders.length > 0 && (
+          {activeOrdersList.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-3">Pending</h2>
-              {pendingOrders.map(order => (
+              <h2 className="text-lg font-semibold mb-3">Active</h2>
+              {activeOrdersList.map(order => (
                 <OrderCard 
                   key={order.id} 
                   order={order} 
@@ -665,24 +670,10 @@ const OrderList = ({
             </div>
           )}
           
-          {preparingOrders.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-3">Preparing</h2>
-              {preparingOrders.map(order => (
-                <OrderCard 
-                  key={order.id} 
-                  order={order} 
-                  useDropdownForStatus={useDropdownForStatus}
-                  onStatusChange={onStatusChange}
-                />
-              ))}
-            </div>
-          )}
-          
-          {displayedCompletedOrders.length > 0 && (
+          {completedOrdersList.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold mb-3">Completed</h2>
-              {displayedCompletedOrders.map(order => (
+              {completedOrdersList.map(order => (
                 <OrderCard 
                   key={order.id} 
                   order={order} 

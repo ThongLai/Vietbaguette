@@ -38,14 +38,14 @@ export interface OrderItem {
     };
   }[];
   notes?: string;
-  status: 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
+  status: 'PREPARING' | 'COMPLETED' | 'CANCELLED';
 }
 
 export interface Order {
   id: string;
   items: OrderItem[];
   total: number;
-  status: 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   tableNumber?: number;
   customerName?: string;
@@ -163,8 +163,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       // Log token for debugging (remove in production)
       console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
       
-      // Fetch active orders (pending and preparing)
-      const activeResponse = await fetch('/api/orders?status=active', {
+      // Fetch active orders
+      const activeResponse = await fetch('/api/orders?status=ACTIVE', {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
@@ -174,7 +174,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       setActiveOrders(activeData);
 
       // Fetch completed orders
-      const completedResponse = await fetch('/api/orders?status=completed', {
+      const completedResponse = await fetch('/api/orders?status=COMPLETED', {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }

@@ -105,8 +105,7 @@ const Orders = () => {
   });
   
   const orderStatCounts = {
-    pending: activeOrders.filter(o => o.status === 'PENDING').length,
-    preparing: activeOrders.filter(o => o.status === 'PREPARING').length,
+    active: activeOrders.filter(o => o.status === 'ACTIVE').length,
     completed: completedOrders.length,
     urgent: allOrders.filter(o => o.isUrgent).length,
   };
@@ -156,20 +155,10 @@ const Orders = () => {
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold">{orderStatCounts.pending}</p>
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-2xl font-bold">{orderStatCounts.active}</p>
             </div>
             <Clock className="h-10 w-10 text-orange-500 opacity-80" />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Preparing</p>
-              <p className="text-2xl font-bold">{orderStatCounts.preparing}</p>
-            </div>
-            <Package className="h-10 w-10 text-blue-500 opacity-80" />
           </CardContent>
         </Card>
         
@@ -219,8 +208,7 @@ const Orders = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="PREPARING">Preparing</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="COMPLETED">Completed</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
