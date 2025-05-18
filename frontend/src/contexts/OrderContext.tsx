@@ -93,18 +93,54 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     fetchMenu();
   }, []);
-
-  // Fetch orders periodically
+  // Set up WebSocket connection for real-time updates
   useEffect(() => {
+    const ws = new WebSocket(
+      `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
+    );
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'NEW_ORDER':
+          setActiveOrders(prev => [data.order, ...prev]);
+          // Play notification sound for new orders
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(e => console.error('Failed to play notification sound', e));
+          break;
+          
+        case 'ORDER_UPDATED':
+          setActiveOrders(prev => prev.map(order => 
+            order.id === data.order.id ? data.order : order
+          ));
+          break;
+          
+        case 'ORDER_COMPLETED':
+          setActiveOrders(prev => prev.filter(order => order.id !== data.order.id));
+          setCompletedOrders(prev => [data.order, ...prev]);
+          break;
+      }
+    };
+
+    // Initial fetch
     fetchOrders();
-    const interval = setInterval(fetchOrders, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
+
+    // Cleanup
+    return () => {
+      ws.close();
+    };
   }, []);
 
   const fetchMenu = async () => {
     try {
       setIsMenuLoading(true);
-      const response = await fetch('/api/menu');
+      const token = localStorage.getItem('viet_baguette_token');
+      const response = await fetch('/api/menu', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch menu');
       const data = await response.json();
       setMenu(data);
@@ -118,14 +154,27 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchOrders = async () => {
     try {
+      // Get JWT token from localStorage with the correct key
+      const token = localStorage.getItem('viet_baguette_token');
+      // Log token for debugging (remove in production)
+      console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
+      
       // Fetch active orders (pending and preparing)
-      const activeResponse = await fetch('/api/orders?status=active');
+      const activeResponse = await fetch('/api/orders?status=active', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (!activeResponse.ok) throw new Error('Failed to fetch active orders');
       const activeData = await activeResponse.json();
       setActiveOrders(activeData);
 
       // Fetch completed orders
-      const completedResponse = await fetch('/api/orders?status=completed');
+      const completedResponse = await fetch('/api/orders?status=completed', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (!completedResponse.ok) throw new Error('Failed to fetch completed orders');
       const completedData = await completedResponse.json();
       setCompletedOrders(completedData);
@@ -149,15 +198,23 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     customerName?: string;
   }) => {
     try {
+      // Get JWT token from localStorage with the correct key
+      const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(orderData),
       });
 
-      if (!response.ok) throw new Error('Failed to create order');
+      if (!response.ok) {
+        // Get the error details from the response
+        const errorData = await response.json().catch(() => null);
+        console.error('Order creation error details:', errorData);
+        throw new Error('Failed to create order');
+      }
 
       const newOrder = await response.json();
       setActiveOrders(prev => [newOrder, ...prev]);
@@ -178,10 +235,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
+      const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ status }),
       });
@@ -212,10 +271,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const updateItemStatus = async (orderId: string, itemId: string, status: OrderItem['status']) => {
     try {
+      const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch(`/api/orders/${orderId}/items/${itemId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ status }),
       });
@@ -257,10 +318,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const markOrderUrgent = async (orderId: string, isUrgent: boolean) => {
     try {
+      const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch(`/api/orders/${orderId}/priority`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ isUrgent }),
       });
@@ -288,10 +351,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const markOrderVIP = async (orderId: string, isVIP: boolean) => {
     try {
+      const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch(`/api/orders/${orderId}/priority`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ isVIP }),
       });

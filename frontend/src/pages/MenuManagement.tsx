@@ -293,14 +293,6 @@ const MenuManagement = () => {
       
       const method = selectedItem ? 'PUT' : 'POST';
       const url = selectedItem ? `/api/menu/${selectedItem.id}` : '/api/menu';
-      
-      // const response = await fetch(url, {
-      //   method,
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(formData),
-      // });
 
       const response = await fetch(url, {
         method,

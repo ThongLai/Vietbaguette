@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { normalizeCategory } from '@/lib/menu-utils';
+export type { CartItem };
 
 // Update CartItem interface to match new data structure
 interface CartItem {
@@ -47,8 +48,8 @@ const MenuItemCard = ({
   onAddToCart: (item: MenuItem) => void;
 }) => {
   return (
-    <Card className="h-full flex flex-col overflow-hidden">
-      <div className="relative h-32 overflow-hidden bg-muted">
+    <Card className="h-full flex flex-col overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      <div className="relative h-40 overflow-hidden bg-muted">
         {item.image ? (
           <img 
             src={item.image} 
@@ -61,9 +62,9 @@ const MenuItemCard = ({
           </div>
         )}
         {item.vegetarian && (
-          <Badge className="absolute top-2 right-2 bg-green-500">
-            <Leaf className="h-3 w-3 mr-1" />
-            Veg
+          <Badge className="absolute top-2 right-2 bg-green-500 px-3 py-1 text-white shadow-md hover:bg-green-600 transition-colors">
+            <Leaf className="h-4 w-4 mr-2" />
+            Vegetarian
           </Badge>
         )}
       </div>
@@ -404,6 +405,11 @@ const NewOrderForm = () => {
     }, 0);
   };
 
+  // Function to clear the cart
+  const clearCart = () => {
+    setCart([]);
+  };
+
   const handleSubmitOrder = async () => {
     if (cart.length === 0) {
       toast({
@@ -414,59 +420,81 @@ const NewOrderForm = () => {
       return;
     }
 
+    // Validate options for required items
+    const missingRequiredOptions = cart.some(item => 
+      item.menuItem.options?.some(opt => 
+        !item.options.some(selected => selected.menuOption.id === opt.id)
+      )
+    );
+
+    if (missingRequiredOptions) {
+      toast({
+        title: "Missing Options",
+        description: "Please select all required options for items in your order.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
       // Calculate total for the order
-      const total = cart.reduce((sum, item) => {
-        const basePrice = item.menuItem.price * item.quantity;
-        const optionsPrice = item.options.reduce((optSum, opt) => 
-          optSum + (opt.optionChoice.price || 0) * item.quantity, 0);
-        return sum + basePrice + optionsPrice;
-      }, 0);
+      const total = calculateTotal();
 
-      // Format order data according to the database schema
+      // Format order data according to the Prisma schema
       const orderData = {
+        tableNumber: tableNumber ? parseInt(tableNumber) : undefined,
+        customerName: customerName || undefined,
         items: cart.map(item => ({
-          menuItemId: item.menuItem.id,
           quantity: item.quantity,
+          menuItemId: item.menuItem.id,
           notes: item.notes || '',
           selectedOptions: item.options.map(opt => ({
             menuOptionId: opt.menuOption.id,
-            optionChoiceId: opt.optionChoice.id,
-          })),
-        })),
-        tableNumber: tableNumber ? parseInt(tableNumber) : undefined,
-        customerName: customerName || undefined,
-        total, // Add the calculated total
+            optionChoiceId: opt.optionChoice.id
+          }))
+        }))
       };
 
-      // Add the order using the context function
+      // Submit order through context
       await addOrder(orderData);
 
+      // Clear cart and show success message
+      clearCart();
+      toast({
+        title: "Order Placed Successfully",
+        description: "The order has been sent to the kitchen.",
+        variant: "default",
+      });
+
       // Reset form
-      setCart([]);
       setTableNumber('');
       setCustomerName('');
+
     } catch (error) {
-      console.error('Error submitting order:', error);
+      console.error('Failed to place order:', error);
       toast({
-        title: "Error",
-        description: "Failed to place the order. Please try again.",
+        title: "Failed to Place Order",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 lg:px-6">
       {/* Menu Section */}
       <div className="lg:col-span-2 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Menu</CardTitle>
+        <Card className="shadow-md">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl">Menu</CardTitle>
+            {user && (
+              <p className="text-sm text-muted-foreground">
+                Welcome back, {user.name}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             {isMenuLoading ? (
@@ -542,103 +570,100 @@ const NewOrderForm = () => {
 
       {/* Order Summary Section */}
       <div className="space-y-6">
-        <Card className="sticky top-6">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Order Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6">
-              {/* Customer Info */}
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="tableNumber">Table Number (optional)</Label>
-                  <Input
-                    id="tableNumber"
-                    type="number"
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                    placeholder="Enter table number"
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="customerName">Customer Name (optional)</Label>
-                  <Input
-                    id="customerName"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-
-              {/* Cart Items */}
-              <div>
-                <h3 className="font-semibold mb-3">Items ({cart.length})</h3>
-                
-                {cart.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground border rounded-md">
-                    <p>No items added yet</p>
-                    <p className="text-sm mt-1">Select items from the menu to add them to your order</p>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[calc(100vh-500px)]">
-                    <div className="space-y-4 pr-4">
-                      {cart.map((item, index) => (
-                        <CartItemComponent
-                          key={index}
-                          item={item}
-                          onUpdateQuantity={(quantity) => handleUpdateQuantity(index, quantity)}
-                          onRemove={() => handleRemoveItem(index)}
-                          onUpdateOptions={(optionName, choice, price) => {
-                            const menuOption = item.menuItem.options?.find(opt => opt.name === optionName);
-                            if (!menuOption) return;
-                            const optionChoice = menuOption.choices.find(c => c.name === choice);
-                            if (!optionChoice) return;
-                            handleUpdateOptions(index, menuOption.id, optionChoice.id);
-                          }}
-                          onUpdateNotes={(notes) => handleUpdateNotes(index, notes)}
-                        />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
+<Card className="sticky top-6">
+  <CardHeader>
+    <CardTitle className="flex items-center">
+      <ShoppingCart className="mr-2 h-5 w-5" />
+      Order Summary
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="grid gap-6">
+      {/* Customer Info */}
+      <div className="grid gap-4">
+        <div>
+          <Label htmlFor="tableNumber">Table Number (optional)</Label>
+          <Input
+            id="tableNumber"
+            value={tableNumber}
+            onChange={(e) => setTableNumber(e.target.value)}
+            placeholder="Enter table number"
+            className="mt-1.5"
+          />
+        </div>
+        <div>
+          <Label htmlFor="customerName">Customer Name (optional)</Label>
+          <Input
+            id="customerName"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Enter customer name"
+            className="mt-1.5"
+          />
+        </div>
+      </div>
+      {/* Cart Items */}
+      <div>
+        <h3 className="font-semibold mb-3">Items ({cart.length})</h3>
+        {cart.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground border rounded-md">
+            <p>No items added yet</p>
+            <p className="text-sm mt-1">Select items from the menu to add them to your order</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[calc(100vh-500px)]">
+            <div className="space-y-4 pr-4">
+              {cart.map((item, index) => (
+                <CartItemComponent
+                  key={index}
+                  item={item}
+                  onUpdateQuantity={(quantity) => handleUpdateQuantity(index, quantity)}
+                  onRemove={() => handleRemoveItem(index)}
+                  onUpdateOptions={(optionName, choice, price) => {
+                    const menuOption = item.menuItem.options?.find(opt => opt.name === optionName);
+                    if (!menuOption) return;
+                    const optionChoice = menuOption.choices.find(c => c.name === choice);
+                    if (!optionChoice) return;
+                    handleUpdateOptions(index, menuOption.id, optionChoice.id);
+                  }}
+                  onUpdateNotes={(notes) => handleUpdateNotes(index, notes)}
+                />
+              ))}
             </div>
-          </CardContent>
-          <CardFooter className="flex-col border-t pt-4">
-            <div className="w-full flex justify-between text-lg font-bold mb-4">
-              <span>Total</span>
-              <span>£{calculateTotal().toFixed(2)}</span>
-            </div>
-            <Button 
-              className="w-full font-semibold"
-              size="lg"
-              disabled={cart.length === 0 || isSubmitting}
-              onClick={handleSubmitOrder}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  Processing...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <Check className="mr-2 h-5 w-5" />
-                  Place Order
-                </span>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+          </ScrollArea>
+        )}
       </div>
     </div>
+  </CardContent>
+  <CardFooter className="flex-col border-t pt-4">
+    <div className="w-full flex justify-between text-lg font-bold mb-4">
+      <span>Total</span>
+      <span>£{calculateTotal().toFixed(2)}</span>
+    </div>
+    <Button
+      className="w-full font-semibold"
+      size="lg"
+      disabled={cart.length === 0 || isSubmitting}
+      onClick={handleSubmitOrder}
+    >
+      {isSubmitting ? (
+        <span className="flex items-center">
+          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+          Processing...
+        </span>
+      ) : (
+        <span className="flex items-center">
+          <Check className="mr-2 h-5 w-5" />
+          Place Order
+        </span>
+      )}
+    </Button>
+  </CardFooter>
+</Card>
+</div>
+</div>
   );
-};
+}
 
 const NewOrderFormContainer = () => {
   return (
