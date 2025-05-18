@@ -292,386 +292,397 @@ const RecentShiftOrders = () => {
             New Orders
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div 
-              className={`flex items-center p-3 rounded-md cursor-pointer ${filterTab === "all" || filterTab === "active" ? "bg-blue-50 dark:bg-blue-900/20" : "bg-muted/50"}`}
-              onClick={() => setFilterTab("active")}
-            >
-              <Coffee className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-              <div>
-                <div className="text-sm text-muted-foreground">Active</div>
-                <div className="text-xl font-bold">{activeCount}</div>
-              </div>
-            </div>
-            <div 
-              className={`flex items-center p-3 rounded-md cursor-pointer ${filterTab === "completed" ? "bg-green-50 dark:bg-green-900/20" : "bg-muted/50"}`}
-              onClick={() => setFilterTab("completed")}
-            >
-              <Check className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
-              <div>
-                <div className="text-sm text-muted-foreground">Completed</div>
-                <div className="text-xl font-bold">{completedCount}</div>
-              </div>
-            </div>
-            <div 
-              className={`flex items-center p-3 rounded-md cursor-pointer ${filterTab === "cancelled" ? "bg-red-50 dark:bg-red-900/20" : "bg-muted/50"}`}
-              onClick={() => setFilterTab("cancelled")}
-            >
-              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
-              <div>
-                <div className="text-sm text-muted-foreground">Cancelled</div>
-                <div className="text-xl font-bold">{cancelledCount}</div>
-              </div>
-            </div>
-          </div>
-
-          <Tabs defaultValue="all" className="w-full" value={filterTab} onValueChange={setFilterTab}>
-            <TabsList className="w-full grid grid-cols-4 mb-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={filterTab}>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <CardContent className="overflow-x-auto">
+          <div className="min-w-[300px]">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 overflow-x-auto pb-1">
+              <div 
+                className={`flex items-center p-2 sm:p-3 rounded-md cursor-pointer ${filterTab === "all" || filterTab === "active" ? "bg-blue-50 dark:bg-blue-900/20" : "bg-muted/50"}`}
+                onClick={() => setFilterTab("active")}
+              >
+                <Coffee className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400 mr-1 sm:mr-2" />
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Active</div>
+                  <div className="text-lg sm:text-xl font-bold">{activeCount}</div>
                 </div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No {filterTab !== "all" ? filterTab.toLowerCase() : ""} orders in the last 10 hours
+              </div>
+              <div 
+                className={`flex items-center p-2 sm:p-3 rounded-md cursor-pointer ${filterTab === "completed" ? "bg-green-50 dark:bg-green-900/20" : "bg-muted/50"}`}
+                onClick={() => setFilterTab("completed")}
+              >
+                <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400 mr-1 sm:mr-2" />
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Completed</div>
+                  <div className="text-lg sm:text-xl font-bold">{completedCount}</div>
                 </div>
-              ) : (
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-4">
-                    {filteredOrders.map((order, index) => {
-                      const extendedOrder = {
-                        ...order,
-                        updatedAt: order.createdAt,
-                        items: order.items
-                      } as EnhancedOrder;
-                      
-                      return (
-                        <div 
-                          key={order.id} 
-                          className="border rounded-md overflow-hidden"
-                        >
-                          {/* Order Header */}
+              </div>
+              <div 
+                className={`flex items-center p-2 sm:p-3 rounded-md cursor-pointer ${filterTab === "cancelled" ? "bg-red-50 dark:bg-red-900/20" : "bg-muted/50"}`}
+                onClick={() => setFilterTab("cancelled")}
+              >
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 dark:text-red-400 mr-1 sm:mr-2" />
+                <div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Cancelled</div>
+                  <div className="text-lg sm:text-xl font-bold">{cancelledCount}</div>
+                </div>
+              </div>
+            </div>
+
+            <Tabs defaultValue="all" className="w-full" value={filterTab} onValueChange={setFilterTab}>
+              <TabsList className="w-full flex overflow-x-auto scrollbar-hide snap-x p-0.5 mb-4">
+                <TabsTrigger className="flex-1 min-w-[80px] snap-start" value="all">All</TabsTrigger>
+                <TabsTrigger className="flex-1 min-w-[80px] snap-start" value="active">Active</TabsTrigger>
+                <TabsTrigger className="flex-1 min-w-[80px] snap-start" value="completed">Completed</TabsTrigger>
+                <TabsTrigger className="flex-1 min-w-[80px] snap-start" value="cancelled">Cancelled</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={filterTab}>
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredOrders.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No {filterTab !== "all" ? filterTab.toLowerCase() : ""} orders in the last 10 hours
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[400px] sm:h-[400px] w-full">
+                    <div className="space-y-4 min-w-[300px]">
+                      {filteredOrders.map((order, index) => {
+                        const extendedOrder = {
+                          ...order,
+                          updatedAt: order.createdAt,
+                          items: order.items
+                        } as EnhancedOrder;
+                        
+                        return (
                           <div 
-                            className={cn(
-                              "flex flex-wrap justify-between items-center p-3 hover:bg-muted/50 transition-colors cursor-pointer",
-                              order.status === 'ACTIVE' ? 'bg-blue-50 dark:bg-blue-900/10' : 
-                              order.status === 'COMPLETED' ? 'bg-green-50 dark:bg-green-900/10' : 
-                              'bg-red-50 dark:bg-red-900/10'
-                            )}
-                            onClick={() => toggleExpand(order.id)}
+                            key={order.id} 
+                            className="border rounded-md overflow-hidden"
                           >
-                            <div className="flex items-center gap-2 mb-2 sm:mb-0 w-full sm:w-auto">
-                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground font-medium text-xs">
-                                {index + 1}
-                              </div>
-                              <div>
-                                <div className="font-medium flex items-center flex-wrap">
-                                  <span className="mr-2">Order #{order.id.slice(-4)}</span>
-                                  {order.isUrgent && (
-                                    <Badge className="mr-2 bg-red-500 text-white border-none whitespace-nowrap">
-                                      <Bell className="h-3 w-3 mr-1" />
-                                      Urgent
-                                    </Badge>
-                                  )}
+                            {/* Order Header */}
+                            <div 
+                              className={cn(
+                                "flex flex-wrap justify-between items-center p-2 sm:p-3 hover:bg-muted/50 transition-colors cursor-pointer overflow-x-auto",
+                                order.status === 'ACTIVE' ? 'bg-blue-50 dark:bg-blue-900/10' : 
+                                order.status === 'COMPLETED' ? 'bg-green-50 dark:bg-green-900/10' : 
+                                'bg-red-50 dark:bg-red-900/10'
+                              )}
+                              onClick={() => toggleExpand(order.id)}
+                            >
+                              <div className="flex items-center gap-2 mb-2 sm:mb-0 w-full sm:w-auto min-w-fit">
+                                <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-primary-foreground font-medium text-xs">
+                                  {index + 1}
                                 </div>
-                                <div className="flex flex-wrap text-sm text-muted-foreground gap-x-2">
-                                  <span>{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
-                                  <span>•</span>
-                                  <span>£{order.total.toFixed(2)}</span>
-                                  {order.status === 'ACTIVE' && (
-                                    <>
-                                      <span>•</span>
-                                      <OrderTimer createdAt={order.createdAt} />
-                                    </>
-                                  )}
+                                <div>
+                                  <div className="font-medium flex items-center flex-nowrap">
+                                    <span className="mr-2 text-sm sm:text-base">Order #{order.id.slice(-4)}</span>
+                                    {order.isUrgent && (
+                                      <Badge className="mr-2 bg-red-500 text-white border-none whitespace-nowrap">
+                                        <Bell className="h-3 w-3 mr-1" />
+                                        Urgent
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-nowrap text-xs sm:text-sm text-muted-foreground gap-x-1 sm:gap-x-2">
+                                    <span>{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
+                                    <span>•</span>
+                                    <span>£{order.total.toFixed(2)}</span>
+                                    {order.status === 'ACTIVE' && (
+                                      <>
+                                        <span>•</span>
+                                        <OrderTimer createdAt={order.createdAt} />
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto">
-                              {/* Status Badge */}
-                              <Badge 
-                                variant="outline" 
-                                className={cn(
-                                  "whitespace-nowrap",
-                                  order.status === 'ACTIVE' 
-                                    ? 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                                    : order.status === 'COMPLETED'
-                                      ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                      : 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                                )}
-                              >
-                                {order.status}
-                              </Badge>
                               
-                              {/* Quick Action Buttons */}
-                              <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end mt-2 sm:mt-0">
-                                {/* Primary Action Buttons - Always Visible */}
-                                {order.status !== 'COMPLETED' && (
+                              <div className="flex items-center gap-1 sm:gap-2 flex-nowrap justify-end w-full sm:w-auto min-w-fit">
+                                {/* Status Badge */}
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "whitespace-nowrap text-xs",
+                                    order.status === 'ACTIVE' 
+                                      ? 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                                      : order.status === 'COMPLETED'
+                                        ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                        : 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                  )}
+                                >
+                                  {order.status}
+                                </Badge>
+                                
+                                {/* Quick Action Buttons */}
+                                <div className="flex items-center gap-1 sm:gap-2 flex-nowrap justify-end mt-2 sm:mt-0 overflow-x-auto">
+                                  {/* Primary Action Buttons - Always Visible */}
+                                  {order.status !== 'COMPLETED' && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 w-7 sm:h-9 sm:w-auto px-0 sm:px-3 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleStatusChange(order.id, 'COMPLETED');
+                                            }}
+                                          >
+                                            <Check className="h-4 w-4 sm:mr-1.5" />
+                                            <span className="hidden sm:inline text-xs sm:text-sm">Done</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Mark as Completed</TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+
+                                  {/* Urgency Toggle Button - Keep visible */}
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="h-8 sm:h-9 px-2 sm:px-3 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                          className={cn(
+                                            "h-7 w-7 sm:h-9 sm:w-auto px-0 sm:px-3", 
+                                            order.isUrgent 
+                                              ? "bg-amber-100 text-amber-700 border-amber-300" 
+                                              : "text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                                          )}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleStatusChange(order.id, 'COMPLETED');
+                                            handleUrgencyToggle(order.id, !!order.isUrgent);
                                           }}
                                         >
-                                          <Check className="h-4 w-4 mr-1 sm:mr-1.5" />
-                                          <span className="sm:inline text-xs sm:text-sm">Done</span>
+                                          <Bell className="h-4 w-4 sm:mr-1.5" />
+                                          <span className="hidden sm:inline text-xs sm:text-sm">
+                                            {order.isUrgent ? 'Not Urgent' : 'Urgent'}
+                                          </span>
                                         </Button>
                                       </TooltipTrigger>
-                                      <TooltipContent>Mark as Completed</TooltipContent>
+                                      <TooltipContent>
+                                        {order.isUrgent ? 'Remove urgent flag' : 'Mark as urgent'}
+                                      </TooltipContent>
                                     </Tooltip>
                                   </TooltipProvider>
-                                )}
 
-                                {/* Urgency Toggle Button - Keep visible */}
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
+                                  {/* More Actions Dropdown */}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        className={cn(
-                                          "h-8 sm:h-9 px-2 sm:px-3", 
-                                          order.isUrgent 
-                                            ? "bg-amber-100 text-amber-700 border-amber-300" 
-                                            : "text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
-                                        )}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleUrgencyToggle(order.id, !!order.isUrgent);
-                                        }}
+                                        className="h-7 w-7 sm:h-9 sm:w-9 px-0 sm:px-0"
                                       >
-                                        <Bell className="h-4 w-4 mr-1 sm:mr-1.5" />
-                                        <span className="sm:inline text-xs sm:text-sm">
-                                          {order.isUrgent ? 'Not Urgent' : 'Urgent'}
-                                        </span>
+                                        <MoreVertical className="h-4 w-4" />
+                                        <span className="sr-only">More actions</span>
                                       </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {order.isUrgent ? 'Remove urgent flag' : 'Mark as urgent'}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-
-                                {/* More Actions Dropdown */}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-8 sm:h-9 px-2"
-                                    >
-                                      <MoreVertical className="h-4 w-4" />
-                                      <span className="sr-only">More actions</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    {/* Status Change Options */}
-                                    {order.status !== 'ACTIVE' && (
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      {/* Status Change Options */}
+                                      {order.status !== 'ACTIVE' && (
+                                        <DropdownMenuItem 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChange(order.id, 'ACTIVE');
+                                          }}
+                                          className="text-blue-600 focus:text-blue-700 focus:bg-blue-50"
+                                        >
+                                          <Coffee className="h-4 w-4 mr-2" />
+                                          <span>Mark as Active</span>
+                                        </DropdownMenuItem>
+                                      )}
+                                      
+                                      {order.status !== 'CANCELLED' && (
+                                        <DropdownMenuItem 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStatusChange(order.id, 'CANCELLED');
+                                          }}
+                                          className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                        >
+                                          <X className="h-4 w-4 mr-2" />
+                                          <span>Cancel Order</span>
+                                        </DropdownMenuItem>
+                                      )}
+                                      
+                                      <DropdownMenuSeparator />
+                                      
+                                      {/* Edit Option */}
                                       <DropdownMenuItem 
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleStatusChange(order.id, 'ACTIVE');
+                                          openModifyDialog(order, e);
                                         }}
-                                        className="text-blue-600 focus:text-blue-700 focus:bg-blue-50"
+                                        className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
                                       >
-                                        <Coffee className="h-4 w-4 mr-2" />
-                                        <span>Mark as Active</span>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        <span>Modify Order</span>
                                       </DropdownMenuItem>
-                                    )}
-                                    
-                                    {order.status !== 'CANCELLED' && (
+                                      
+                                      <DropdownMenuSeparator />
+                                      
+                                      {/* Delete Option */}
                                       <DropdownMenuItem 
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleStatusChange(order.id, 'CANCELLED');
+                                          handleOrderDelete(order.id, e);
                                         }}
                                         className="text-red-600 focus:text-red-700 focus:bg-red-50"
                                       >
-                                        <X className="h-4 w-4 mr-2" />
-                                        <span>Cancel Order</span>
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        <span>Delete Order</span>
                                       </DropdownMenuItem>
-                                    )}
-                                    
-                                    <DropdownMenuSeparator />
-                                    
-                                    {/* Edit Option */}
-                                    <DropdownMenuItem 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openModifyDialog(order, e);
-                                      }}
-                                      className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      <span>Modify Order</span>
-                                    </DropdownMenuItem>
-                                    
-                                    <DropdownMenuSeparator />
-                                    
-                                    {/* Delete Option */}
-                                    <DropdownMenuItem 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOrderDelete(order.id, e);
-                                      }}
-                                      className="text-red-600 focus:text-red-700 focus:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      <span>Delete Order</span>
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                                
+                                {/* Expand/Collapse Indicator */}
+                                {expandedOrders[order.id] ? (
+                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
                               </div>
-                              
-                              {/* Expand/Collapse Indicator */}
-                              {expandedOrders[order.id] ? (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              )}
                             </div>
-                          </div>
-                          
-                          {/* Order Details (expanded view) */}
-                          {expandedOrders[order.id] && (
-                            <div className="p-3 bg-background border-t">
-                              {/* Additional Order Info */}
-                              <div className="flex justify-between text-sm mb-3">
-                                <div className="space-y-1">
-                                  {order.customerName && (
-                                    <div>
-                                      <span className="text-muted-foreground">Customer:</span> {order.customerName}
-                                    </div>
-                                  )}
-                                  {order.tableNumber && (
-                                    <div>
-                                      <span className="text-muted-foreground">Table:</span> {order.tableNumber}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-right space-y-1">
-                                  <div>
-                                    <span className="text-muted-foreground">Placed:</span> {format(new Date(order.createdAt), 'HH:mm:ss')}
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Updated:</span> {formatDistanceToNow(new Date(extendedOrder.updatedAt), { addSuffix: true })}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <Separator className="my-2" />
-                              
-                              {/* Order Items */}
-                              <h4 className="font-medium mb-2">Order Items</h4>
-                              <div className="space-y-2">
-                                {extendedOrder.items.map((item, itemIndex) => (
-                                  <div 
-                                    key={`${order.id}-item-${itemIndex}`} 
-                                    className="flex flex-wrap justify-between items-center p-2 rounded-md border bg-muted/30"
-                                  >
-                                    <div className="flex items-center gap-2 mb-2 w-full sm:w-auto sm:mb-0">
-                                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary font-medium text-xs">
-                                        {itemIndex + 1}
-                                      </div>
+                            
+                            {/* Order Details (expanded view) */}
+                            {expandedOrders[order.id] && (
+                              <div className="p-2 sm:p-3 bg-background border-t overflow-x-auto">
+                                {/* Additional Order Info */}
+                                <div className="flex flex-col sm:flex-row sm:justify-between text-xs sm:text-sm mb-2 sm:mb-3">
+                                  <div className="space-y-1 mb-2 sm:mb-0">
+                                    {order.customerName && (
                                       <div>
-                                        <div className="font-medium">{item.menuItem.name}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {item.quantity > 1 && `${item.quantity}x `}
-                                          £{item.menuItem.price.toFixed(2)}
-                                          {item.notes && ` • ${item.notes}`}
+                                        <span className="text-muted-foreground">Customer:</span> {order.customerName}
+                                      </div>
+                                    )}
+                                    {order.tableNumber && (
+                                      <div>
+                                        <span className="text-muted-foreground">Table:</span> {order.tableNumber}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-left sm:text-right space-y-1">
+                                    <div>
+                                      <span className="text-muted-foreground">Placed:</span> {format(new Date(order.createdAt), 'HH:mm:ss')}
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">Updated:</span> {formatDistanceToNow(new Date(extendedOrder.updatedAt), { addSuffix: true })}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <Separator className="my-2" />
+                                
+                                {/* Order Items */}
+                                <h4 className="font-medium mb-2 text-sm sm:text-base">Order Items</h4>
+                                <div className="space-y-2">
+                                  {extendedOrder.items.map((item, itemIndex) => (
+                                    <div 
+                                      key={`${order.id}-item-${itemIndex}`} 
+                                      className="flex flex-nowrap justify-between items-center p-2 rounded-md border bg-muted/30 overflow-x-auto"
+                                    >
+                                      <div className="flex items-center gap-1 sm:gap-2 mb-2 w-full sm:w-auto sm:mb-0 min-w-fit">
+                                        <div className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary/10 text-primary font-medium text-xs">
+                                          {itemIndex + 1}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="font-medium text-sm sm:text-base truncate">{item.menuItem.name}</div>
+                                          <div className="text-xs text-muted-foreground truncate">
+                                            {item.quantity > 1 && `${item.quantity}x `}
+                                            £{item.menuItem.price.toFixed(2)}
+                                            {item.notes && ` • ${item.notes}`}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end min-w-fit">
+                                        {/* Item Status Badge */}
+                                        {renderItemStatusBadge(item.status)}
+                                        
+                                        {/* Status Change Buttons */}
+                                        <div className="flex items-center gap-1 mt-2 sm:mt-0 sm:gap-2 flex-nowrap">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-7 w-7 sm:h-8 sm:w-auto min-w-0 sm:min-w-[34px] px-0 sm:px-2", 
+                                              item.status === 'PREPARING' 
+                                                ? "bg-blue-100 text-blue-700 border-blue-300" 
+                                                : "text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                            )}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleItemStatusChange(order.id, item.id, 'PREPARING');
+                                            }}
+                                            disabled={item.status === 'PREPARING'}
+                                          >
+                                            <Coffee className="h-3.5 w-3.5 sm:mr-1" />
+                                            <span className="hidden sm:inline text-xs">Prep</span>
+                                          </Button>
+                                          
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-7 w-7 sm:h-8 sm:w-auto min-w-0 sm:min-w-[34px] px-0 sm:px-2", 
+                                              item.status === 'COMPLETED' 
+                                                ? "bg-green-100 text-green-700 border-green-300" 
+                                                : "text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                            )}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleItemStatusChange(order.id, item.id, 'COMPLETED');
+                                            }}
+                                            disabled={item.status === 'COMPLETED'}
+                                          >
+                                            <Check className="h-3.5 w-3.5 sm:mr-1" />
+                                            <span className="hidden sm:inline text-xs">Done</span>
+                                          </Button>
+                                          
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-7 w-7 sm:h-8 sm:w-auto min-w-0 sm:min-w-[34px] px-0 sm:px-2", 
+                                              item.status === 'CANCELLED' 
+                                                ? "bg-red-100 text-red-700 border-red-300" 
+                                                : "text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                            )}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleItemStatusChange(order.id, item.id, 'CANCELLED');
+                                            }}
+                                            disabled={item.status === 'CANCELLED'}
+                                          >
+                                            <X className="h-3.5 w-3.5 sm:mr-1" />
+                                            <span className="hidden sm:inline text-xs">Cancel</span>
+                                          </Button>
                                         </div>
                                       </div>
                                     </div>
-                                    
-                                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                      {/* Item Status Badge */}
-                                      {renderItemStatusBadge(item.status)}
-                                      
-                                      {/* Status Change Buttons */}
-                                      <div className="flex items-center gap-1 sm:gap-2">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className={cn(
-                                            "h-7 sm:h-8 min-w-[30px] sm:min-w-[34px] px-1 sm:px-2", 
-                                            item.status === 'PREPARING' 
-                                              ? "bg-blue-100 text-blue-700 border-blue-300" 
-                                              : "text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                                          )}
-                                          onClick={() => handleItemStatusChange(order.id, item.id, 'PREPARING')}
-                                          disabled={item.status === 'PREPARING'}
-                                        >
-                                          <Coffee className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
-                                          <span className="text-[10px] sm:text-xs">Prep</span>
-                                        </Button>
-                                        
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className={cn(
-                                            "h-7 sm:h-8 min-w-[30px] sm:min-w-[34px] px-1 sm:px-2", 
-                                            item.status === 'COMPLETED' 
-                                              ? "bg-green-100 text-green-700 border-green-300" 
-                                              : "text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
-                                          )}
-                                          onClick={() => handleItemStatusChange(order.id, item.id, 'COMPLETED')}
-                                          disabled={item.status === 'COMPLETED'}
-                                        >
-                                          <Check className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
-                                          <span className="text-[10px] sm:text-xs">Done</span>
-                                        </Button>
-                                        
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className={cn(
-                                            "h-7 sm:h-8 min-w-[30px] sm:min-w-[34px] px-1 sm:px-2", 
-                                            item.status === 'CANCELLED' 
-                                              ? "bg-red-100 text-red-700 border-red-300" 
-                                              : "text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                                          )}
-                                          onClick={() => handleItemStatusChange(order.id, item.id, 'CANCELLED')}
-                                          disabled={item.status === 'CANCELLED'}
-                                        >
-                                          <X className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
-                                          <span className="text-[10px] sm:text-xs">Cancel</span>
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
-            </TabsContent>
-          </Tabs>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
         </CardContent>
       </Card>
 
       {/* Modify Order Dialog */}
       <Dialog open={!!modifyingOrder} onOpenChange={(open) => !open && closeModifyDialog()}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Modify Order {modifyingOrder?.id.slice(-4)}</DialogTitle>
             <DialogDescription>
@@ -679,15 +690,15 @@ const RecentShiftOrders = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
+          <div className="py-4 overflow-x-auto">
             <h3 className="font-medium mb-2">Order Items</h3>
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
               {modifiedItems.map((item, index) => (
                 <div 
                   key={item.id}
-                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30"
+                  className="flex items-center justify-between p-3 border rounded-md bg-muted/30 overflow-x-auto"
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 min-w-fit">
                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-medium text-xs mt-1">
                       {index + 1}
                     </div>
@@ -700,7 +711,7 @@ const RecentShiftOrders = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-fit">
                     <div className="flex items-center border rounded-md overflow-hidden">
                       <Button
                         variant="ghost"
