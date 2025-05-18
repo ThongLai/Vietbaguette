@@ -116,7 +116,7 @@ export const createMenuItem = async (req: Request, res: Response) => {
     } = validation.data;
     
     // Create the menu item with options in a transaction
-    const menuItem = await prisma.$transaction(async (tx: PrismaClient) => {
+    const menuItem = await prisma.$transaction(async (tx) => {
       const newMenuItem = await tx.menuItem.create({
         data: {
           name,
@@ -217,7 +217,7 @@ export const updateMenuItem = async (req: Request, res: Response) => {
     }
     
     // Update the menu item with options in a transaction
-    const menuItem = await prisma.$transaction(async (tx: PrismaClient) => {
+    const menuItem = await prisma.$transaction(async (tx) => {
       // Update basic menu item data
       const updatedMenuItem = await tx.menuItem.update({
         where: { id },
@@ -301,7 +301,7 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
     }
     
     // Delete menu item
-    await prisma.$transaction(async (tx: PrismaClient) => {
+    await prisma.$transaction(async (tx) => {
       // Delete associated options and choices first
       await tx.menuOption.deleteMany({
         where: { menuItemId: id },
