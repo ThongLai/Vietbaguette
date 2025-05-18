@@ -18,12 +18,6 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
@@ -31,19 +25,12 @@ import { format, formatDistanceToNow } from 'date-fns';
 
 // Define types for new functionality if not already in OrderContext
 type OrderStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-type ItemStatus = 'PENDING' | 'PREPARING' | 'COMPLETED' | 'CANCELLED';
+type ItemStatus = 'PREPARING' | 'COMPLETED' | 'CANCELLED';
 
 // We're creating our own interfaces to avoid type conflicts with the existing ones
-interface OrderItemWithStatus {
-  id: string;
-  menuItem: {
-    id: string;
-    name: string;
-    price: number;
-  };
-  quantity: number;
-  notes?: string;
-  status: ItemStatus;
+interface OrderItemWithStatus extends OrderItem {
+  // We're using the existing status field from OrderItem
+  // No need to add a new status field
 }
 
 interface EnhancedOrder extends Omit<Order, 'items'> {
@@ -81,11 +68,28 @@ const OrderTimer = ({ createdAt }: { createdAt: string }) => {
 };
 
 const RecentShiftOrders = () => {
-  const { orders, activeOrders, completedOrders, cancelledOrders } = useOrders();
+  const { orders, activeOrders, completedOrders, cancelledOrders, updateOrderStatus, fetchOrders } = useOrders();
   const [filterTab, setFilterTab] = useState('all');
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
+  // Add useEffect to refresh orders when triggered
+  useEffect(() => {
+    const refreshData = async () => {
+      if (fetchOrders) {
+        await fetchOrders();
+      }
+    };
+    
+    refreshData();
+  }, [refreshTrigger, fetchOrders]);
+  
+  // Function to trigger a refresh
+  const triggerRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   const activeCount = activeOrders.length;
   const completedCount = completedOrders.length;
   const cancelledCount = cancelledOrders.length;
@@ -111,10 +115,11 @@ const RecentShiftOrders = () => {
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
       setIsLoading(true);
-      // In a real implementation, you would update the status via API
-      // For now, we'll mock this functionality
-      console.log(`Updating order ${orderId} status to ${status}`);
-      setTimeout(() => setIsLoading(false), 500);
+      // Use the context method instead of direct API call
+      await updateOrderStatus(orderId, status);
+      setIsLoading(false);
+      // Trigger refresh after successful update
+      triggerRefresh();
     } catch (error) {
       console.error("Error updating order status:", error);
       setIsLoading(false);
@@ -125,9 +130,17 @@ const RecentShiftOrders = () => {
   const handleImportanceToggle = async (orderId: string, isUrgent: boolean) => {
     try {
       setIsLoading(true);
-      // Mock implementation
-      console.log(`Setting order ${orderId} urgency to ${!isUrgent}`);
-      setTimeout(() => setIsLoading(false), 500);
+      // Use direct API call since updateOrderPriority doesn't exist in context
+      await fetch(`/api/orders/${orderId}/priority`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isUrgent: !isUrgent }),
+      });
+      setIsLoading(false);
+      // Trigger refresh after successful update
+      triggerRefresh();
     } catch (error) {
       console.error("Error updating order importance:", error);
       setIsLoading(false);
@@ -138,9 +151,17 @@ const RecentShiftOrders = () => {
   const handleItemStatusChange = async (orderId: string, itemId: string, status: ItemStatus) => {
     try {
       setIsLoading(true);
-      // Mock implementation
-      console.log(`Updating item ${itemId} in order ${orderId} status to ${status}`);
-      setTimeout(() => setIsLoading(false), 500);
+      // Use direct API call since updateOrderItemStatus doesn't exist in context
+      await fetch(`/api/orders/${orderId}/items/${itemId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+      setIsLoading(false);
+      // Trigger refresh after successful update
+      triggerRefresh();
     } catch (error) {
       console.error("Error updating item status:", error);
       setIsLoading(false);
@@ -150,8 +171,6 @@ const RecentShiftOrders = () => {
   // Render item status badge
   const renderItemStatusBadge = (status: ItemStatus) => {
     switch (status) {
-      case 'PENDING':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">Pending</Badge>;
       case 'PREPARING':
         return <Badge variant="outline" className="bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">Preparing</Badge>;
       case 'COMPLETED':
@@ -164,7 +183,7 @@ const RecentShiftOrders = () => {
   };
 
   return (
-    <Card>
+    <Card className="shadow-sm border-opacity-40 overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl flex items-center">
           <Clock className="mr-2 h-5 w-5" />
@@ -230,10 +249,7 @@ const RecentShiftOrders = () => {
                     const extendedOrder = {
                       ...order,
                       updatedAt: order.createdAt, // For demo, use createdAt as updatedAt
-                      items: order.items.map(item => ({
-                        ...item,
-                        status: 'PENDING' as ItemStatus
-                      }))
+                      items: order.items // Use the actual items with their database status values
                     } as EnhancedOrder;
                     
                     return (
@@ -244,28 +260,28 @@ const RecentShiftOrders = () => {
                         {/* Order Header */}
                         <div 
                           className={cn(
-                            "flex justify-between items-center p-3 hover:bg-muted/50 transition-colors cursor-pointer",
+                            "flex flex-wrap justify-between items-center p-3 hover:bg-muted/50 transition-colors cursor-pointer",
                             order.status === 'ACTIVE' ? 'bg-blue-50 dark:bg-blue-900/10' : 
                             order.status === 'COMPLETED' ? 'bg-green-50 dark:bg-green-900/10' : 
                             'bg-red-50 dark:bg-red-900/10'
                           )}
                           onClick={() => toggleExpand(order.id)}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mb-2 sm:mb-0 w-full sm:w-auto">
                             <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground font-medium text-xs">
                               {index + 1}
                             </div>
                             <div>
-                              <div className="font-medium flex items-center">
-                                Order #{order.id.slice(-4)}
+                              <div className="font-medium flex items-center flex-wrap">
+                                <span className="mr-2">Order #{order.id.slice(-4)}</span>
                                 {order.isUrgent && (
-                                  <Badge className="ml-2 bg-red-500 text-white border-none">
+                                  <Badge className="mr-2 bg-red-500 text-white border-none whitespace-nowrap">
                                     <Bell className="h-3 w-3 mr-1" />
                                     Urgent
                                   </Badge>
                                 )}
                               </div>
-                              <div className="flex text-sm text-muted-foreground space-x-2">
+                              <div className="flex flex-wrap text-sm text-muted-foreground gap-x-2">
                                 <span>{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
                                 <span>•</span>
                                 <span>£{order.total.toFixed(2)}</span>
@@ -279,71 +295,90 @@ const RecentShiftOrders = () => {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto">
                             {/* Status Badge */}
                             <Badge 
                               variant="outline" 
-                              className={
+                              className={cn(
+                                "whitespace-nowrap",
                                 order.status === 'ACTIVE' 
                                   ? 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
                                   : order.status === 'COMPLETED'
                                     ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                                     : 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                              }
+                              )}
                             >
                               {order.status}
                             </Badge>
                             
                             {/* Quick Action Buttons */}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleImportanceToggle(order.id, order.isUrgent);
-                                    }}
-                                  >
-                                    <Star className={cn("h-4 w-4", order.isUrgent && "fill-yellow-400 text-yellow-400")} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {order.isUrgent ? "Remove urgency" : "Mark as urgent"}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            {/* Status Change Dropdown */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {order.status !== 'ACTIVE' && (
-                                  <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'ACTIVE')}>
-                                    <Coffee className="h-4 w-4 mr-2" />
-                                    Mark as Active
-                                  </DropdownMenuItem>
-                                )}
-                                {order.status !== 'COMPLETED' && (
-                                  <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'COMPLETED')}>
-                                    <Check className="h-4 w-4 mr-2" />
-                                    Mark as Completed
-                                  </DropdownMenuItem>
-                                )}
-                                {order.status !== 'CANCELLED' && (
-                                  <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'CANCELLED')}>
-                                    <X className="h-4 w-4 mr-2" />
-                                    Mark as Cancelled
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-end mt-2 sm:mt-0">
+                              {order.status !== 'ACTIVE' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 sm:h-9 px-2 sm:px-3 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(order.id, 'ACTIVE');
+                                        }}
+                                      >
+                                        <Coffee className="h-4 w-4 mr-1 sm:mr-1.5" />
+                                        <span className="sm:inline text-xs sm:text-sm">Active</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mark as Active</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              
+                              {order.status !== 'COMPLETED' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 sm:h-9 px-2 sm:px-3 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(order.id, 'COMPLETED');
+                                        }}
+                                      >
+                                        <Check className="h-4 w-4 mr-1 sm:mr-1.5" />
+                                        <span className="sm:inline text-xs sm:text-sm">Done</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mark as Completed</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              
+                              {order.status !== 'CANCELLED' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 sm:h-9 px-2 sm:px-3 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(order.id, 'CANCELLED');
+                                        }}
+                                      >
+                                        <X className="h-4 w-4 mr-1 sm:mr-1.5" />
+                                        <span className="sm:inline text-xs sm:text-sm">Cancel</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mark as Cancelled</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                             
                             {/* Expand/Collapse Indicator */}
                             {expandedOrders[order.id] ? (
@@ -389,9 +424,9 @@ const RecentShiftOrders = () => {
                               {extendedOrder.items.map((item, itemIndex) => (
                                 <div 
                                   key={`${order.id}-item-${itemIndex}`} 
-                                  className="flex justify-between items-center p-2 rounded-md border bg-muted/30"
+                                  className="flex flex-wrap justify-between items-center p-2 rounded-md border bg-muted/30"
                                 >
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 mb-2 w-full sm:w-auto sm:mb-0">
                                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary font-medium text-xs">
                                       {itemIndex + 1}
                                     </div>
@@ -402,80 +437,66 @@ const RecentShiftOrders = () => {
                                         £{item.menuItem.price.toFixed(2)}
                                         {item.notes && ` • ${item.notes}`}
                                       </div>
-                                      {/* Optional item options would be rendered here if your API provides them */}
                                     </div>
                                   </div>
                                   
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                                     {/* Item Status Badge */}
-                                    {renderItemStatusBadge(item.status || 'PENDING')}
+                                    {renderItemStatusBadge(item.status)}
                                     
-                                    {/* Item Status Dropdown */}
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                                          <MoreVertical className="h-3.5 w-3.5" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem 
-                                          onClick={() => handleItemStatusChange(order.id, `${itemIndex}`, 'PENDING')}
-                                          disabled={item.status === 'PENDING'}
-                                        >
-                                          <Clock className="h-3.5 w-3.5 mr-2" />
-                                          Mark as Pending
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                          onClick={() => handleItemStatusChange(order.id, `${itemIndex}`, 'PREPARING')}
-                                          disabled={item.status === 'PREPARING'}
-                                        >
-                                          <Coffee className="h-3.5 w-3.5 mr-2" />
-                                          Mark as Preparing
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                          onClick={() => handleItemStatusChange(order.id, `${itemIndex}`, 'COMPLETED')}
-                                          disabled={item.status === 'COMPLETED'}
-                                        >
-                                          <Check className="h-3.5 w-3.5 mr-2" />
-                                          Mark as Completed
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                          onClick={() => handleItemStatusChange(order.id, `${itemIndex}`, 'CANCELLED')}
-                                          disabled={item.status === 'CANCELLED'}
-                                        >
-                                          <X className="h-3.5 w-3.5 mr-2" />
-                                          Mark as Cancelled
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    {/* Status Change Buttons */}
+                                    <div className="flex items-center gap-1 sm:gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className={cn(
+                                          "h-7 sm:h-8 min-w-[30px] sm:min-w-[34px] px-1 sm:px-2", 
+                                          item.status === 'PREPARING' 
+                                            ? "bg-blue-100 text-blue-700 border-blue-300" 
+                                            : "text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                        )}
+                                        onClick={() => handleItemStatusChange(order.id, item.id, 'PREPARING')}
+                                        disabled={item.status === 'PREPARING'}
+                                      >
+                                        <Coffee className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
+                                        <span className="text-[10px] sm:text-xs">Prep</span>
+                                      </Button>
+                                      
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className={cn(
+                                          "h-7 sm:h-8 min-w-[30px] sm:min-w-[34px] px-1 sm:px-2", 
+                                          item.status === 'COMPLETED' 
+                                            ? "bg-green-100 text-green-700 border-green-300" 
+                                            : "text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                        )}
+                                        onClick={() => handleItemStatusChange(order.id, item.id, 'COMPLETED')}
+                                        disabled={item.status === 'COMPLETED'}
+                                      >
+                                        <Check className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
+                                        <span className="text-[10px] sm:text-xs">Done</span>
+                                      </Button>
+                                      
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className={cn(
+                                          "h-7 sm:h-8 min-w-[30px] sm:min-w-[34px] px-1 sm:px-2", 
+                                          item.status === 'CANCELLED' 
+                                            ? "bg-red-100 text-red-700 border-red-300" 
+                                            : "text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                        )}
+                                        onClick={() => handleItemStatusChange(order.id, item.id, 'CANCELLED')}
+                                        disabled={item.status === 'CANCELLED'}
+                                      >
+                                        <X className="h-3.5 w-3.5 mr-0.5 sm:mr-1" />
+                                        <span className="text-[10px] sm:text-xs">Cancel</span>
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
-                            </div>
-                            
-                            {/* Order Actions */}
-                            <div className="flex justify-end mt-4 space-x-2">
-                              {order.status === 'ACTIVE' && (
-                                <Button 
-                                  variant="default" 
-                                  size="sm"
-                                  onClick={() => handleStatusChange(order.id, 'COMPLETED')}
-                                >
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Complete Order
-                                </Button>
-                              )}
-                              {order.status !== 'CANCELLED' && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                  onClick={() => handleStatusChange(order.id, 'CANCELLED')}
-                                >
-                                  <X className="h-4 w-4 mr-2" />
-                                  Cancel Order
-                                </Button>
-                              )}
                             </div>
                           </div>
                         )}

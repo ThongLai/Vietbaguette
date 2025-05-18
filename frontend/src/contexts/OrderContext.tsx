@@ -112,7 +112,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         case 'NEW_ORDER':
           setActiveOrders(prev => [data.order, ...prev]);
           // Play notification sound for new orders
-          const audio = new Audio('/notification.mp3');
+          const audio = new Audio('sound/notification.mp3');
           audio.play().catch(e => console.error('Failed to play notification sound', e));
           break;
           
@@ -253,7 +253,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Play notification sound
-      const audio = new Audio('/notification.mp3');
+      const audio = new Audio('sound/notification.mp3');
       audio.play().catch(e => console.error('Failed to play notification sound', e));
     } catch (error) {
       console.error('Error creating order:', error);
