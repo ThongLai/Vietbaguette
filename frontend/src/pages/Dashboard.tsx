@@ -40,7 +40,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>{t('dashboard.orders.dashboard')}</CardTitle>
@@ -71,7 +71,7 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        <div className="space-y-6">
+        {/* <div className="space-y-6">
           <div>
             <Button 
               variant="outline" 
@@ -112,8 +112,10 @@ const Dashboard = () => {
             {showSchedule && <ScheduleCalendar />}
           </div>
 
+        </div>  */}
+
           {/* Settings Card - Removed since controls are in top navigation */}
-        </div>
+
       </div>
     </DashboardLayout>
   );
