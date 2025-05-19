@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MenuItem } from '@/types/menu'
-import { MenuCard } from '@/components/Menu/MenuCard'
+import { MenuCard } from '@/components/menu/MenuCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { motion } from 'framer-motion'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -9,11 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import MainLayout from '@/components/Layout/MainLayout'
 
 export default function Menu() {
-  const { t } = useTranslation()
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  
   // Wrap with MainLayout to maintain consistent header and footer
   return (
     <MainLayout>
