@@ -1,8 +1,13 @@
 @echo off
 echo This script will seed the menu database with all menu items and options.
+echo WARNING: This will upload data to your REAL database.
 echo.
-echo Press any key to continue or Ctrl+C to cancel.
-pause > nul
+
+set /p confirm="Are you sure you want to continue? (Y/N): "
+if /i "%confirm%" NEQ "Y" (
+    echo Operation cancelled.
+    exit /b
+)
 
 cd backend
 npm run seed:menu
