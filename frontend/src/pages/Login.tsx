@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import MainLayout from '@/components/Layout/MainLayout';
+import MainLayout from '@/components/layout/MainLayout';
 
 const Login = () => {
   const { login, isLoading } = useAuth();

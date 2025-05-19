@@ -16,16 +16,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Environment variables
-const PORT = process.env.PORT || 3000;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8080';
+const PORT = process.env.PORT as string;
+const FRONTEND_URL = process.env.FRONTEND_URL as string;
+const CORS_ORIGIN = process.env.CORS_ORIGIN as string;
 
 // Initialize Express
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [CORS_ORIGIN, FRONTEND_URL, 'https://vietbaguette.vercel.app'],
+  origin: [CORS_ORIGIN, FRONTEND_URL],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -38,7 +38,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: CORS_ORIGIN,
+    origin: [CORS_ORIGIN, FRONTEND_URL],
     methods: ['GET', 'POST'],
     credentials: true
   }

@@ -1,7 +1,6 @@
-
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import MainLayout from '@/components/Layout/MainLayout';
+import MainLayout from '@/components/layout/MainLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,7 +40,7 @@ const Index = () => {
               </Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-viet-red">
+              <Button size="lg" variant="outline" className="border-viet-red text-viet-red bg-white/80 backdrop-blur-sm hover:bg-viet-red hover:text-white dark:border-white dark:text-white dark:bg-transparent dark:hover:bg-white dark:hover:text-viet-red">
                 Find Us
               </Button>
             </Link>
@@ -245,7 +244,7 @@ const Index = () => {
           <p className="max-w-2xl mx-auto mb-8">
             Catering or Bao Party is a delicious innovation for your event - family, friends, colleagues or work services. Try the perfect sharing solution for Vietnamese cuisine in your private event and gatherings.
           </p>
-          <Button variant="outline" className="border-white text-white hover:bg-white hover:text-viet-red">
+          <Button variant="outline" className="border-white text-viet-red bg-white hover:bg-transparent hover:text-white transition-colors">
             Learn More
           </Button>
         </div>

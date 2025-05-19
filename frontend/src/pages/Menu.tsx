@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { motion } from 'framer-motion'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import MainLayout from '@/components/Layout/MainLayout'
+import MainLayout from '@/components/layout/MainLayout'
 
 export default function Menu() {
   // Wrap with MainLayout to maintain consistent header and footer
