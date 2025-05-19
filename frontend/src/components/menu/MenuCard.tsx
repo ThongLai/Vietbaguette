@@ -18,10 +18,10 @@ export function MenuCard({ item }: MenuCardProps) {
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      {item.imageUrl && !imageError && (
+      {item.image && !imageError && (
         <div className="relative h-48 overflow-hidden">
           <img
-            src={item.imageUrl}
+            src={item.image}
             alt={displayName}
             className="w-full h-full object-cover"
             onError={() => setImageError(true)}
