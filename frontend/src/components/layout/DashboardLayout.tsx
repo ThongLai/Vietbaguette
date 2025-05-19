@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCommunication } from '@/contexts/CommunicationContext';
 import { cn } from '@/lib/utils';
-import LanguageSwitcher from '@/components/Settings/LanguageSwitcher';
-import ThemeSwitcher from '@/components/Settings/ThemeSwitcher';
+import LanguageSwitcher from '@/components/settings/LanguageSwitcher';
+import ThemeSwitcher from '@/components/settings/ThemeSwitcher';
 
 interface DashboardLayoutProps {
   children: ReactNode;

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrders, Order } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import OrderList from '@/components/Dashboard/OrderList';
+import OrderList from '@/components/dashboard/OrderList';
 import { 
   Card, 
   CardContent, 

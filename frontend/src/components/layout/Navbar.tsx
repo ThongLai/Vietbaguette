@@ -11,8 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import ThemeSwitcher from '@/components/Settings/ThemeSwitcher';
-import LanguageSwitcher from '@/components/Settings/LanguageSwitcher';
+import ThemeSwitcher from '@/components/settings/ThemeSwitcher';
+import LanguageSwitcher from '@/components/settings/LanguageSwitcher';
 
 const Navbar = () => {
   const { t } = useLanguage();
