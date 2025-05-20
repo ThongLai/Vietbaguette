@@ -47,7 +47,7 @@ const Settings = () => {
           <TabsContent value="appearance" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>{t('settings.theme')}</CardTitle>
+                <CardTitle>{t('settings.Theme')}</CardTitle>
                 <CardDescription>
                   Customize the appearance of the application
                 </CardDescription>
@@ -76,7 +76,7 @@ const Settings = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-medium mb-4">{t('settings.language')}</h3>
+                  <h3 className="text-lg font-medium mb-4">{t('settings.Language')}</h3>
                   <RadioGroup
                     value={language}
                     onValueChange={(value) => setLanguage(value as 'en' | 'vi')}

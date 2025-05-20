@@ -105,8 +105,8 @@
       "english": "English",
       "vietnamese": "Vietnamese"
     },
-    "theme": "Theme",
-    "language": "Language",
+    "Theme": "Theme",
+    "Language": "Language",
     "theme.light": "Light",
     "theme.dark": "Dark",
     "theme.system": "System",

@@ -105,8 +105,8 @@
       "english": "Tiếng Anh",
       "vietnamese": "Tiếng Việt"
     },
-    "theme": "Giao diện",
-    "language": "Ngôn ngữ",
+    "Theme": "Giao diện",
+    "Language": "Ngôn ngữ",
     "theme.light": "Sáng",
     "theme.dark": "Tối",
     "theme.system": "Hệ thống",
