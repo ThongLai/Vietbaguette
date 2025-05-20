@@ -18,6 +18,320 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useRef } from 'react';
+
+// Main component for recent shift orders
+const RecentShiftOrders = () => {
+    const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders, setRecentOrders, deleteOrder } = useOrders();
+    const { t } = useLanguage();
+    const [activeTab, setActiveTab] = useState('active');
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for animations
+    const [hasInitialDataLoaded, setHasInitialDataLoaded] = useState(false);
+
+    // Function to load recent orders and update UI state
+    const fetchRecentOrders = async () => {
+      setIsLoading(true);
+      try {
+          // Call the loadRecentOrders function from context
+          await loadRecentOrders();
+          // Increment refresh key to trigger animations
+          setRefreshKey(prev => prev + 1);
+      } catch (error) {
+        console.error('Error loading recent orders:', error);
+        toast({
+          title: "Failed to load orders",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    useEffect(() => {
+      // Check if orders already exist (page was not reloaded)
+      const shouldFetch = !hasInitialDataLoaded || recentOrders.length === 0;
+      
+      if (shouldFetch) {
+        fetchRecentOrders().then(() => {
+          setHasInitialDataLoaded(true);
+        });
+      }
+      
+      // Set up polling for order updates every 30 seconds
+      const intervalId = setInterval(fetchRecentOrders, 30000);
+      
+      return () => clearInterval(intervalId);
+    }, [hasInitialDataLoaded, recentOrders.length]);
+  
+  
+    
+    // Handle order status changes - immediately update UI state
+    const handleOrderStatusChange = (orderId: string, newStatus: Order['status']) => {
+      // Find the order to update
+      const orderToUpdate = recentOrders.find(order => order.id === orderId);
+      if (!orderToUpdate) return;
+      
+      // Update local state immediately for responsive UI
+      const updatedOrders = recentOrders.map(order => 
+        order.id === orderId ? {...order, status: newStatus} : order
+      );
+      setRecentOrders(updatedOrders);
+      
+      // If the selected order is the one being updated, reset it to avoid blank dialog
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(null);
+        setIsModifyDialogOpen(false);
+      }
+      
+      // Call API in background without waiting
+      updateOrderStatus(orderId, newStatus).catch(error => {
+        console.error('Error updating order status:', error);
+        toast({
+          title: "Failed to update order status",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      });
+    };
+    
+    // Handle item status changes
+    const handleItemStatusChange = (orderId: string, itemId: string, status: OrderItem['status']) => {
+      updateItemStatus(orderId, itemId, status);
+    };
+    
+    // Handle opening modify dialog
+    const handleModifyOrder = (order: Order) => {
+      // Make sure we have the latest version of the order
+      const latestOrder = recentOrders.find(o => o.id === order.id);
+      setSelectedOrder(latestOrder || order);
+      setIsModifyDialogOpen(true);
+    };
+    
+    // Handle saving modified order with immediate UI update
+    const handleSaveModifiedOrder = async (modifiedOrder: Order): Promise<void> => {
+      // Immediately update the local state for responsive UI
+      setRecentOrders(prevOrders => 
+        prevOrders.map(order => order.id === modifiedOrder.id ? modifiedOrder : order)
+      );
+      
+      // Close the dialog and reset selected order
+      setIsModifyDialogOpen(false);
+      setSelectedOrder(null);
+      
+      // Show success toast
+      toast({
+        description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
+        duration: 3000,
+      });
+      
+      // Handle API calls in background without blocking UI
+      try {
+        const promises = [];
+        
+        // Update order status if changed
+        if (modifiedOrder.status !== selectedOrder?.status) {
+          promises.push(updateOrderStatus(modifiedOrder.id, modifiedOrder.status));
+        }
+        
+        // Update urgent flag if changed
+        if (modifiedOrder.isUrgent !== selectedOrder?.isUrgent) {
+          promises.push(markOrderUrgent(modifiedOrder.id, modifiedOrder.isUrgent || false));
+        }
+        
+        // Wait for all promises to resolve
+        await Promise.all(promises);
+      } catch (error) {
+        console.error('Error updating order:', error);
+        toast({
+          title: "Update error",
+          description: "Changes might not have been saved to the server",
+          variant: "destructive",
+        });
+        
+        // Refresh data from server to ensure UI is in sync
+        fetchRecentOrders();
+      }
+    };
+    
+    // Handle deleting an order with immediate UI update
+    const handleDeleteOrder = async (orderId: string): Promise<void> => {
+      if (!window.confirm('Are you sure you want to delete this order?')) {
+        return;
+      }
+      
+      // Immediately update UI by removing order from local state
+      setRecentOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+      
+      // Close the dialog if the deleted order is the selected one
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setIsModifyDialogOpen(false);
+        setSelectedOrder(null);
+      }
+      
+      // Show success message
+      toast({
+        description: `Order deleted successfully`,
+        duration: 3000,
+      });
+      
+      // Get token for API call
+      const token = localStorage.getItem('viet_baguette_token');
+      
+      // Call API directly instead of using context function to avoid page refresh
+      try {
+        const response = await fetch(`/api/orders/${orderId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error('Delete order error details:', errorData);
+          throw new Error(`Failed to delete order: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error deleting order:', error);
+        toast({
+          title: "Delete Failed",
+          description: "There was an error deleting the order.",
+          variant: "destructive",
+        });
+        // If deletion fails, refresh data to restore correct state
+        fetchRecentOrders();
+      }
+    };
+    
+    // Filter orders based on active tab
+    const filteredOrders = recentOrders.filter(order => {
+      if (activeTab === 'active') return order.status === 'ACTIVE';
+      if (activeTab === 'completed') return order.status === 'COMPLETED' || order.status === 'CANCELLED';
+      return true; // 'all' tab
+    });
+    
+    // Order items by createdAt (most recent first) and urgent flag
+    const sortedOrders = [...filteredOrders].sort((a, b) => {
+      // Urgent orders first
+      if (a.isUrgent && !b.isUrgent) return -1;
+      if (!a.isUrgent && b.isUrgent) return 1;
+      
+      // Then by creation date (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  
+    // Reset selected order when changing tabs to avoid the blank dialog bug
+    useEffect(() => {
+      setSelectedOrder(null);
+      setIsModifyDialogOpen(false);
+    }, [activeTab]);
+  
+    return (
+      <div className="w-full">
+        {/* Header with title and refresh button */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">
+          Recent Orders
+            {isLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">(Loading...)</span>}
+          </h2>
+          <Button 
+            ref={refreshButtonRef}  // <-- Add this ref
+            variant="outline" 
+            size="sm" 
+            onClick={fetchRecentOrders}
+            disabled={isLoading}
+            className="transition-all duration-200 hover:bg-muted"
+          >
+            <RefreshCw className={cn(
+              "mr-2 h-4 w-4 transition-all", 
+              isLoading && "animate-spin"
+            )} />
+            Refresh
+          </Button>
+        </div>
+        
+        {/* Tabs for active, completed, and all orders */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsTrigger className="flex justify-center" value="active">
+              {t('dashboard.orders.activeTab')} ({recentOrders.filter(o => o.status === 'ACTIVE').length})
+            </TabsTrigger>
+            <TabsTrigger className="flex justify-center" value="completed">
+              Completed/Cancelled ({recentOrders.filter(o => o.status === 'COMPLETED' || o.status === 'CANCELLED').length})
+            </TabsTrigger>
+            <TabsTrigger className="flex justify-center" value="all">
+              All ({recentOrders.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Content for active, completed, and all orders */}
+          <TabsContent value={activeTab} className="animate-in fade-in-50 slide-in-from-bottom-5 duration-300">
+            {isLoading ? (
+              // Loading skeleton
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Card key={index} className="mb-3">
+                    <CardHeader className="py-3 px-4">
+                      <div className="flex justify-between">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-5 w-28" />
+                      </div>
+                      <Skeleton className="h-4 w-40 mt-2" />
+                    </CardHeader>
+                    <CardContent className="py-0 px-4 pb-3">
+                      <Skeleton className="h-4 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : sortedOrders.length === 0 ? (
+              <div className="text-center py-12 border rounded-md animate-in fade-in-50 zoom-in-95 duration-300">
+                <p className="text-muted-foreground">No orders to display</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[calc(100vh-240px)] pr-4" key={refreshKey}>
+                <div className="space-y-1 animate-in fade-in-50 slide-in-from-bottom-5 duration-300 stagger-1">
+                  {sortedOrders.map((order, index) => (
+                    <div 
+                      key={order.id} 
+                      className={cn(
+                        "transition-all duration-300", 
+                        `animate-in slide-in-from-right-5 duration-${300 + index * 50} delay-${index * 25}`
+                      )}
+                    >
+                      <CompactOrderCard 
+                        order={order} 
+                        onStatusChange={handleOrderStatusChange}
+                        onModify={handleModifyOrder}
+                        onItemStatusChange={handleItemStatusChange}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+        </Tabs>
+        
+        {/* Order modification dialog */}
+        <OrderModificationDialog
+          isOpen={isModifyDialogOpen}
+          onClose={() => {
+            setIsModifyDialogOpen(false);
+            setSelectedOrder(null);
+          }}
+          order={selectedOrder}
+          onSave={handleSaveModifiedOrder}
+          handleDeleteOrder={handleDeleteOrder}
+        />
+      </div>
+    );
+  };
 
 // Helper function to format time counter
 const formatTimeElapsed = (date: Date): string => {
@@ -672,316 +986,6 @@ const OrderModificationDialog = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-};
-
-// Main component for recent shift orders
-const RecentShiftOrders = () => {
-  const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders, setRecentOrders, deleteOrder } = useOrders();
-  const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('active');
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for animations
-  const [hasInitialDataLoaded, setHasInitialDataLoaded] = useState(false);
-  
-  // Function to load recent orders and update UI state
-  const fetchRecentOrders = async () => {
-    setIsLoading(true);
-    try {
-    // Increment refresh key to trigger animations
-      setRefreshKey(prev => prev + 1);
-      // Call the loadRecentOrders function from context
-      await loadRecentOrders();
-    } catch (error) {
-      console.error('Error loading recent orders:', error);
-      toast({
-        title: "Failed to load orders",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    // Check if orders already exist (page was not reloaded)
-    const shouldFetch = !hasInitialDataLoaded || recentOrders.length === 0;
-    
-    if (shouldFetch) {
-      fetchRecentOrders().then(() => {
-        setHasInitialDataLoaded(true);
-      });
-    }
-    
-    // Set up polling for order updates every 30 seconds
-    const intervalId = setInterval(fetchRecentOrders, 30000);
-    
-    return () => clearInterval(intervalId);
-  }, [hasInitialDataLoaded, recentOrders.length]);
-  
-  // Handle order status changes - immediately update UI state
-  const handleOrderStatusChange = (orderId: string, newStatus: Order['status']) => {
-    // Find the order to update
-    const orderToUpdate = recentOrders.find(order => order.id === orderId);
-    if (!orderToUpdate) return;
-    
-    // Update local state immediately for responsive UI
-    const updatedOrders = recentOrders.map(order => 
-      order.id === orderId ? {...order, status: newStatus} : order
-    );
-    setRecentOrders(updatedOrders);
-    
-    // If the selected order is the one being updated, reset it to avoid blank dialog
-    if (selectedOrder && selectedOrder.id === orderId) {
-      setSelectedOrder(null);
-      setIsModifyDialogOpen(false);
-    }
-    
-    // Call API in background without waiting
-    updateOrderStatus(orderId, newStatus).catch(error => {
-      console.error('Error updating order status:', error);
-      toast({
-        title: "Failed to update order status",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    });
-  };
-  
-  // Handle item status changes
-  const handleItemStatusChange = (orderId: string, itemId: string, status: OrderItem['status']) => {
-    updateItemStatus(orderId, itemId, status);
-  };
-  
-  // Handle opening modify dialog
-  const handleModifyOrder = (order: Order) => {
-    // Make sure we have the latest version of the order
-    const latestOrder = recentOrders.find(o => o.id === order.id);
-    setSelectedOrder(latestOrder || order);
-    setIsModifyDialogOpen(true);
-  };
-  
-  // Handle saving modified order with immediate UI update
-  const handleSaveModifiedOrder = async (modifiedOrder: Order): Promise<void> => {
-    // Immediately update the local state for responsive UI
-    setRecentOrders(prevOrders => 
-      prevOrders.map(order => order.id === modifiedOrder.id ? modifiedOrder : order)
-    );
-    
-    // Close the dialog and reset selected order
-    setIsModifyDialogOpen(false);
-    setSelectedOrder(null);
-    
-    // Show success toast
-    toast({
-      description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
-      duration: 3000,
-    });
-    
-    // Handle API calls in background without blocking UI
-    try {
-      const promises = [];
-      
-      // Update order status if changed
-      if (modifiedOrder.status !== selectedOrder?.status) {
-        promises.push(updateOrderStatus(modifiedOrder.id, modifiedOrder.status));
-      }
-      
-      // Update urgent flag if changed
-      if (modifiedOrder.isUrgent !== selectedOrder?.isUrgent) {
-        promises.push(markOrderUrgent(modifiedOrder.id, modifiedOrder.isUrgent || false));
-      }
-      
-      // Wait for all promises to resolve
-      await Promise.all(promises);
-    } catch (error) {
-      console.error('Error updating order:', error);
-      toast({
-        title: "Update error",
-        description: "Changes might not have been saved to the server",
-        variant: "destructive",
-      });
-      
-      // Refresh data from server to ensure UI is in sync
-      fetchRecentOrders();
-    }
-  };
-  
-  // Handle deleting an order with immediate UI update
-  const handleDeleteOrder = async (orderId: string): Promise<void> => {
-    if (!window.confirm('Are you sure you want to delete this order?')) {
-      return;
-    }
-    
-    // Immediately update UI by removing order from local state
-    setRecentOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
-    
-    // Close the dialog if the deleted order is the selected one
-    if (selectedOrder && selectedOrder.id === orderId) {
-      setIsModifyDialogOpen(false);
-      setSelectedOrder(null);
-    }
-    
-    // Show success message
-    toast({
-      description: `Order deleted successfully`,
-      duration: 3000,
-    });
-    
-    // Get token for API call
-    const token = localStorage.getItem('viet_baguette_token');
-    
-    // Call API directly instead of using context function to avoid page refresh
-    try {
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Delete order error details:', errorData);
-        throw new Error(`Failed to delete order: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Error deleting order:', error);
-      toast({
-        title: "Delete Failed",
-        description: "There was an error deleting the order.",
-        variant: "destructive",
-      });
-      // If deletion fails, refresh data to restore correct state
-      fetchRecentOrders();
-    }
-  };
-  
-  // Filter orders based on active tab
-  const filteredOrders = recentOrders.filter(order => {
-    if (activeTab === 'active') return order.status === 'ACTIVE';
-    if (activeTab === 'completed') return order.status === 'COMPLETED' || order.status === 'CANCELLED';
-    return true; // 'all' tab
-  });
-  
-  // Order items by createdAt (most recent first) and urgent flag
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
-    // Urgent orders first
-    if (a.isUrgent && !b.isUrgent) return -1;
-    if (!a.isUrgent && b.isUrgent) return 1;
-    
-    // Then by creation date (newest first)
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
-  // Reset selected order when changing tabs to avoid the blank dialog bug
-  useEffect(() => {
-    setSelectedOrder(null);
-    setIsModifyDialogOpen(false);
-  }, [activeTab]);
-
-  return (
-    <div className="w-full">
-      {/* Header with title and refresh button */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">
-        Recent Orders
-          {isLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">(Loading...)</span>}
-        </h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={fetchRecentOrders}
-          disabled={isLoading}
-          className="transition-all duration-200 hover:bg-muted"
-        >
-          <RefreshCw className={cn(
-            "mr-2 h-4 w-4 transition-all", 
-            isLoading && "animate-spin"
-          )} />
-          Refresh
-        </Button>
-      </div>
-      
-      {/* Tabs for active, completed, and all orders */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 mb-4">
-          <TabsTrigger className="flex justify-center" value="active">
-            {t('dashboard.orders.activeTab')} ({recentOrders.filter(o => o.status === 'ACTIVE').length})
-          </TabsTrigger>
-          <TabsTrigger className="flex justify-center" value="completed">
-            Completed/Cancelled ({recentOrders.filter(o => o.status === 'COMPLETED' || o.status === 'CANCELLED').length})
-          </TabsTrigger>
-          <TabsTrigger className="flex justify-center" value="all">
-            All ({recentOrders.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Content for active, completed, and all orders */}
-        <TabsContent value={activeTab} className="animate-in fade-in-50 slide-in-from-bottom-5 duration-300">
-          {isLoading ? (
-            // Loading skeleton
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Card key={index} className="mb-3">
-                  <CardHeader className="py-3 px-4">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-5 w-24" />
-                      <Skeleton className="h-5 w-28" />
-                    </div>
-                    <Skeleton className="h-4 w-40 mt-2" />
-                  </CardHeader>
-                  <CardContent className="py-0 px-4 pb-3">
-                    <Skeleton className="h-4 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : sortedOrders.length === 0 ? (
-            <div className="text-center py-12 border rounded-md animate-in fade-in-50 zoom-in-95 duration-300">
-              <p className="text-muted-foreground">No orders to display</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[calc(100vh-240px)] pr-4" key={refreshKey}>
-              <div className="space-y-1 animate-in fade-in-50 slide-in-from-bottom-5 duration-300 stagger-1">
-                {sortedOrders.map((order, index) => (
-                  <div 
-                    key={order.id} 
-                    className={cn(
-                      "transition-all duration-300", 
-                      `animate-in slide-in-from-right-5 duration-${300 + index * 50} delay-${index * 25}`
-                    )}
-                  >
-                    <CompactOrderCard 
-                      order={order} 
-                      onStatusChange={handleOrderStatusChange}
-                      onModify={handleModifyOrder}
-                      onItemStatusChange={handleItemStatusChange}
-                    />
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </TabsContent>
-      </Tabs>
-      
-      {/* Order modification dialog */}
-      <OrderModificationDialog
-        isOpen={isModifyDialogOpen}
-        onClose={() => {
-          setIsModifyDialogOpen(false);
-          setSelectedOrder(null);
-        }}
-        order={selectedOrder}
-        onSave={handleSaveModifiedOrder}
-        handleDeleteOrder={handleDeleteOrder}
-      />
-    </div>
   );
 };
 
