@@ -79,8 +79,33 @@ const OrderCard = ({
     }
   };
 
-  const handleItemStatusChange = (itemId: string, status: OrderItem['status']) => {
-    updateItemStatus(order.id, itemId, status);
+  const handleItemStatusChange = async (itemId: string, status: OrderItem['status']) => {
+    try {
+      // Show a loading state if needed
+      setIsChangingStatus(true);
+      
+      // Call the update function
+      await updateItemStatus(order.id, itemId, status);
+      
+      // Show success message
+      toast({
+        description: `Item status updated to ${status.toLowerCase()}`,
+        variant: "default",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Error updating item status:', error);
+      
+      // Show error message
+      toast({
+        title: "Failed to update item status",
+        description: "Please try again or refresh the page",
+        variant: "destructive",
+      });
+    } finally {
+      // Reset loading state
+      setIsChangingStatus(false);
+    }
   };
 
   const handleToggleUrgent = () => {
