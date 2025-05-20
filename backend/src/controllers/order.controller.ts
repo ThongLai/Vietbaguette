@@ -146,10 +146,10 @@ export const createOrder = async (req: Request, res: Response) => {
     // Initialize the processedItems array
     const processedItems: any[] = [];
     // Create the order with items in a transaction
-    const order = await prisma.$transaction(async (tx: PrismaClient) => {
+    const order = await prisma.$transaction(async (prismaTransaction) => {
       // First get all the menuItems to calculate the total
       const menuItemIds = items.map(item => item.menuItemId);
-      const menuItems = await tx.menuItem.findMany({
+      const menuItems = await prismaTransaction.menuItem.findMany({
         where: {
           id: {
             in: menuItemIds,
@@ -186,7 +186,7 @@ export const createOrder = async (req: Request, res: Response) => {
           create: [],
         };
         for (const option of item.selectedOptions) {
-          const menuOption = await tx.menuOption.findUnique({
+          const menuOption = await prismaTransaction.menuOption.findUnique({
             where: { id: option.menuOptionId },
             include: {
               choices: true,
@@ -197,7 +197,7 @@ export const createOrder = async (req: Request, res: Response) => {
             return res.status(400).json({ message: `Menu option with ID ${option.menuOptionId} not found` });
           }
           
-          const optionChoice = await tx.optionChoice.findUnique({
+          const optionChoice = await prismaTransaction.optionChoice.findUnique({
             where: { id: option.optionChoiceId },
           });
           
@@ -225,7 +225,7 @@ export const createOrder = async (req: Request, res: Response) => {
     }
     
     // Create order in a transaction
-    const createdOrder = await tx.order.create({
+    const createdOrder = await prismaTransaction.order.create({
       data: {
         total,
         tableNumber,
@@ -259,14 +259,14 @@ export const createOrder = async (req: Request, res: Response) => {
     });
     
     // Create notifications for all users
-    const users = await tx.user.findMany({
+    const users = await prismaTransaction.user.findMany({
       select: { id: true },
     });
     
     // Create notifications
     await Promise.all(
       users.map((user: any) => 
-        tx.notification.create({
+        prismaTransaction.notification.create({
           data: {
             type: 'NEW_ORDER',
             content: `New order #${createdOrder.id.substring(0, 8)} created`,
@@ -321,7 +321,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     
     try {
       // First update the order
-      updatedOrder = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
+      updatedOrder = await prisma.$transaction(async (prismaTransaction) => {
         // Update the order
         const updatedOrder = await prismaTransaction.order.update({
           where: { id },
@@ -415,7 +415,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
     }
     
     // Update item status
-    const result = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
+    const result = await prisma.$transaction(async (prismaTransaction) => {
       // Update the item
       const updatedItem = await prismaTransaction.orderItem.update({
         where: { id: itemId },
@@ -512,7 +512,7 @@ export const updateOrderUrgency = async (req: Request, res: Response) => {
     }
     
     // Update order priority
-    const order = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
+    const order = await prisma.$transaction(async (prismaTransaction) => {
       // Update the order
       const updatedOrder = await prismaTransaction.order.update({
         where: { id },
@@ -604,7 +604,7 @@ export const updateOrderItemQuantity = async (req: Request, res: Response) => {
     }
     
     // Update item quantity and recalculate order total
-    const result = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
+    const result = await prisma.$transaction(async (prismaTransaction) => {
       // Update the item quantity
       const updatedItem = await prismaTransaction.orderItem.update({
         where: { id: itemId },
@@ -725,7 +725,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
     }
     
     // Delete order in a transaction
-    await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
+    await prisma.$transaction(async (prismaTransaction) => {
       // First delete all order items and their options
       for (const item of existingOrder.items) {
         // Delete selected options for this item
