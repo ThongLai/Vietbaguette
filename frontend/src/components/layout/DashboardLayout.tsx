@@ -9,6 +9,7 @@ import { useCommunication } from '@/contexts/CommunicationContext';
 import { cn } from '@/lib/utils';
 import LanguageSwitcher from '@/components/settings/LanguageSwitcher';
 import ThemeSwitcher from '@/components/settings/ThemeSwitcher';
+import Footer from './Footer';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -231,6 +232,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               {children}
             </div>
           </div>
+          <Footer />
         </main>
       </div>
     </div>
