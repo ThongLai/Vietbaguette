@@ -240,7 +240,6 @@ const RecentShiftOrders = () => {
             {isLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">(Loading...)</span>}
           </h2>
           <Button 
-            ref={refreshButtonRef}  // <-- Add this ref
             variant="outline" 
             size="sm" 
             onClick={fetchRecentOrders}
