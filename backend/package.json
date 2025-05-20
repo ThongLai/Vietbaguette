@@ -11,7 +11,8 @@
     "seed:menu": "tsx scripts/seedMenu.ts",
     "seed:admin": "tsx scripts/seedAdmin.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "node scripts/prisma-migrate.js dev"
+    "migrate": "node scripts/prisma-migrate.js dev",
+    "vercel-build": "node dist/index.js"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
