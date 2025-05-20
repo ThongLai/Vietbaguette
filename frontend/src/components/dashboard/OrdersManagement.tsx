@@ -3,6 +3,7 @@ import { X, Clock, Check, AlertTriangle, Edit, Trash, Plus, Minus, RefreshCw } f
 import { Order, OrderItem, useOrders } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,25 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
+// Helper function to format time counter
+const formatTimeElapsed = (date: Date): string => {
+  const now = new Date();
+  let diffMs = now.getTime() - date.getTime();
+  
+  // Calculate minutes and seconds
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  
+  // If order is exactly 30 minutes or more, use the "X time ago" format
+  if (minutes >= 30) {
+    return formatDistanceToNow(date, { addSuffix: true });
+  }
+  
+  // Otherwise format as mm:ss
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
 // Status badges component
 const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
   switch (status) {
@@ -34,7 +54,13 @@ const OrderStatusBadge = ({ status }: { status: Order['status'] }) => {
 };
 
 // Order item component with image support
-const OrderItemCard = ({ item }: { item: OrderItem }) => {
+const OrderItemCard = ({ 
+  item,
+  onStatusChange 
+}: { 
+  item: OrderItem;
+  onStatusChange?: (itemId: string, status: OrderItem['status']) => void;
+}) => {
   return (
     <div className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
       <div className="flex items-center">
@@ -65,16 +91,32 @@ const OrderItemCard = ({ item }: { item: OrderItem }) => {
           {item.status}
         </Badge>
         
-        {item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && (
-          <Button size="icon" variant="ghost" className="h-7 w-7" title="Mark as completed">
-            <Check className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        
-        {item.status !== 'CANCELLED' && (
-          <Button size="icon" variant="ghost" className="h-7 w-7" title="Cancel item">
-            <X className="h-3.5 w-3.5" />
-          </Button>
+        {onStatusChange && (
+          <>
+            {item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-7 w-7" 
+                title="Mark as completed"
+                onClick={() => onStatusChange(item.id, 'COMPLETED')}
+              >
+                <Check className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            
+            {item.status !== 'CANCELLED' && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-7 w-7" 
+                title="Cancel item"
+                onClick={() => onStatusChange(item.id, 'CANCELLED')}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -85,53 +127,74 @@ const OrderItemCard = ({ item }: { item: OrderItem }) => {
 const CompactOrderCard = ({ 
   order, 
   onStatusChange,
-  onModify
+  onModify,
+  onItemStatusChange
 }: { 
   order: Order;
   onStatusChange: (orderId: string, newStatus: Order['status']) => Promise<void>;
   onModify: (order: Order) => void;
+  onItemStatusChange?: (orderId: string, itemId: string, status: OrderItem['status']) => void;
 }) => {
   const { t } = useLanguage();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // Default to expanded
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [tickAnimation, setTickAnimation] = useState(false);
   
   // Dynamic time counter for active orders
   const [timeCounter, setTimeCounter] = useState(
-    formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })
+    order.status === 'ACTIVE' 
+      ? formatTimeElapsed(new Date(order.createdAt))
+      : formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })
   );
 
-  // Update time counter every minute for active orders
+  // Update time counter more frequently (every second) for active orders
   useEffect(() => {
     if (order.status === 'ACTIVE') {
+      // Initial update
+      setTimeCounter(formatTimeElapsed(new Date(order.createdAt)));
+      
+      // Set up timer for regular updates
       const timer = setInterval(() => {
-        setTimeCounter(formatDistanceToNow(new Date(order.createdAt), { addSuffix: true }));
-      }, 60000); // Update every minute
+        const formattedTime = formatTimeElapsed(new Date(order.createdAt));
+        setTimeCounter(formattedTime);
+        
+        // Trigger the tick animation
+        setTickAnimation(true);
+        setTimeout(() => setTickAnimation(false), 500);
+      }, 1000); // Update every second for accurate mm:ss display
       
       return () => clearInterval(timer);
     }
   }, [order.createdAt, order.status]);
 
-  const handleStatusChange = async (status: Order['status']) => {
-    setIsChangingStatus(true);
-    try {
-      await onStatusChange(order.id, status);
-      toast({
-        description: `Order #${order.id.slice(-4)} marked as ${status.toLowerCase()}`,
-        duration: 3000,
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to update status",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsChangingStatus(false);
+  // Handle item status changes
+  const handleItemStatusChange = (itemId: string, status: OrderItem['status']) => {
+    if (onItemStatusChange) {
+      onItemStatusChange(order.id, itemId, status);
     }
   };
 
+  // Toggle expansion when clicking on the card
+  const toggleExpanded = (e: React.MouseEvent) => {
+    // Don't toggle if clicking on buttons or interactive elements
+    if (
+      (e.target as HTMLElement).closest('button') || 
+      (e.target as HTMLElement).closest('.interactive-element')
+    ) {
+      return;
+    }
+    setIsExpanded(!isExpanded);
+  };
+
   return (
-    <Card className={`mb-3 ${order.isUrgent ? 'border-red-500 dark:border-red-700' : ''}`}>
+    <Card 
+      className={cn(
+        "mb-3 transition-all duration-300 hover:shadow-md cursor-pointer",
+        order.isUrgent ? 'border-red-500 dark:border-red-700' : '',
+        order.status === 'ACTIVE' ? 'bg-white dark:bg-background' : 'bg-muted/20'
+      )}
+      onClick={toggleExpanded}
+    >
       <CardHeader className="py-3 px-4">
         <div className="flex justify-between items-start">
           <div>
@@ -148,8 +211,26 @@ const CompactOrderCard = ({
               )}
             </CardTitle>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
-              <Clock className="mr-1 h-3 w-3" />
-              {order.status === 'ACTIVE' ? timeCounter : formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
+              {order.status === 'ACTIVE' ? (
+                <div className="flex items-center">
+                  <Clock className={cn(
+                    "mr-1 h-3 w-3 text-blue-500",
+                    tickAnimation && "animate-ping"
+                  )} />
+                  <span className={cn(
+                    "font-medium text-blue-600 dark:text-blue-400",
+                    tickAnimation && "text-blue-700 dark:text-blue-300 transition-colors"
+                  )}>
+                    {timeCounter}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <Clock className="mr-1 h-3 w-3" />
+                  {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
+                </>
+              )}
+              
               {order.tableNumber && (
                 <span className="ml-2">• Table {order.tableNumber}</span>
               )}
@@ -158,7 +239,7 @@ const CompactOrderCard = ({
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 interactive-element">
             <OrderStatusBadge status={order.status} />
             
             {/* Quick status update buttons */}
@@ -167,9 +248,12 @@ const CompactOrderCard = ({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-7 px-2"
+                  className="h-7 px-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30"
                   disabled={isChangingStatus}
-                  onClick={() => handleStatusChange('COMPLETED')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleItemStatusChange(order.id, 'COMPLETED');
+                  }}
                 >
                   <Check className="h-3.5 w-3.5 mr-1" />
                   Complete
@@ -177,9 +261,12 @@ const CompactOrderCard = ({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-7 px-2"
+                  className="h-7 px-2 bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30"
                   disabled={isChangingStatus}
-                  onClick={() => handleStatusChange('CANCELLED')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleItemStatusChange(order.id, 'CANCELLED');
+                  }}
                 >
                   <X className="h-3.5 w-3.5 mr-1" />
                   Cancel
@@ -191,7 +278,10 @@ const CompactOrderCard = ({
               variant="ghost" 
               size="icon" 
               className="h-7 w-7"
-              onClick={() => onModify(order)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onModify(order);
+              }}
             >
               <Edit className="h-3.5 w-3.5" />
             </Button>
@@ -200,20 +290,31 @@ const CompactOrderCard = ({
       </CardHeader>
       
       <CardContent className="py-0 px-4 pb-3">
-        <div>
+        <div className="interactive-element">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-medium">
               {order.items.length} {order.items.length === 1 ? 'item' : 'items'} • £{order.total.toFixed(2)}
             </span>
-            <Button variant="link" onClick={() => setIsExpanded(!isExpanded)} className="p-0 h-auto text-xs">
+            <Button 
+              variant="link" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }} 
+              className="p-0 h-auto text-xs"
+            >
               {isExpanded ? 'Hide items' : 'View items'}
             </Button>
           </div>
 
           {isExpanded && (
-            <div className="space-y-2 mt-2">
+            <div className="space-y-2 mt-2 animate-in fade-in-50 slide-in-from-top-5 duration-300">
               {order.items.map((item) => (
-                <OrderItemCard key={item.id} item={item} />
+                <OrderItemCard 
+                  key={item.id} 
+                  item={item} 
+                  onStatusChange={handleItemStatusChange}
+                />
               ))}
             </div>
           )}
@@ -555,42 +656,45 @@ const OrderModificationDialog = ({
 
 // Main component for recent shift orders
 const RecentShiftOrders = () => {
-  const { orders, updateOrderStatus, markOrderUrgent } = useOrders();
+  const { orders, updateOrderStatus, markOrderUrgent, updateItemStatus } = useOrders();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('active');
   const [isLoading, setIsLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for animations
   
   // Load recent orders (last 10 hours)
+  const loadRecentOrders = async () => {
+    setIsLoading(true);
+    try {
+      // Calculate the timestamp for 10 hours ago
+      const tenHoursAgo = new Date();
+      tenHoursAgo.setHours(tenHoursAgo.getHours() - 10);
+      
+      // Filter orders from the last 10 hours
+      // In a real implementation, this would likely be an API call with pagination
+      const recent = orders.filter(order => 
+        new Date(order.createdAt) >= tenHoursAgo
+      );
+      
+      setRecentOrders(recent);
+      // Increment refresh key to trigger animations
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error loading recent orders:', error);
+      toast({
+        title: "Failed to load orders",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   useEffect(() => {
-    const loadRecentOrders = async () => {
-      setIsLoading(true);
-      try {
-        // Calculate the timestamp for 10 hours ago
-        const tenHoursAgo = new Date();
-        tenHoursAgo.setHours(tenHoursAgo.getHours() - 10);
-        
-        // Filter orders from the last 10 hours
-        // In a real implementation, this would likely be an API call with pagination
-        const recent = orders.filter(order => 
-          new Date(order.createdAt) >= tenHoursAgo
-        );
-        
-        setRecentOrders(recent);
-      } catch (error) {
-        console.error('Error loading recent orders:', error);
-        toast({
-          title: "Failed to load orders",
-          description: "Please try again",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadRecentOrders();
     
     // Set up polling for order updates every 30 seconds
@@ -602,8 +706,6 @@ const RecentShiftOrders = () => {
   // Handle order status changes
   const handleOrderStatusChange = async (orderId: string, newStatus: Order['status']) => {
     try {
-      await updateOrderStatus(orderId, newStatus);
-      
       // Update the local state to reflect changes immediately
       setRecentOrders(prev => 
         prev.map(order => 
@@ -612,15 +714,39 @@ const RecentShiftOrders = () => {
             : order
         )
       );
+
+      await updateOrderStatus(orderId, newStatus);
     } catch (error) {
       console.error('Error updating order status:', error);
       throw error;
     }
   };
   
+  // Handle item status changes
+  const handleItemStatusChange = (orderId: string, itemId: string, status: OrderItem['status']) => {
+    updateItemStatus(orderId, itemId, status);
+    
+    // Update local state for immediate feedback
+    setRecentOrders(prev => 
+      prev.map(order => {
+        if (order.id === orderId) {
+          return {
+            ...order,
+            items: order.items.map(item => 
+              item.id === itemId ? { ...item, status } : item
+            )
+          };
+        }
+        return order;
+      })
+    );
+  };
+  
   // Handle opening modify dialog
   const handleModifyOrder = (order: Order) => {
-    setSelectedOrder(order);
+    // Make sure we have the latest version of the order
+    const latestOrder = recentOrders.find(o => o.id === order.id);
+    setSelectedOrder(latestOrder || order);
     setIsModifyDialogOpen(true);
   };
   
@@ -677,6 +803,12 @@ const RecentShiftOrders = () => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  // Reset selected order when changing tabs to avoid the blank dialog bug
+  useEffect(() => {
+    setSelectedOrder(null);
+    setIsModifyDialogOpen(false);
+  }, [activeTab]);
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
@@ -687,10 +819,14 @@ const RecentShiftOrders = () => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => window.location.reload()}
+          onClick={loadRecentOrders}
           disabled={isLoading}
+          className="transition-all duration-200 hover:bg-muted"
         >
-          <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+          <RefreshCw className={cn(
+            "mr-2 h-4 w-4 transition-all", 
+            isLoading && "animate-spin"
+          )} />
           Refresh
         </Button>
       </div>
@@ -708,37 +844,49 @@ const RecentShiftOrders = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value={activeTab}>
+        <TabsContent value={activeTab} className="animate-in fade-in-50 slide-in-from-bottom-5 duration-300">
           {isLoading ? (
             // Loading skeleton
-            Array.from({ length: 3 }).map((_, index) => (
-              <Card key={index} className="mb-3">
-                <CardHeader className="py-3 px-4">
-                  <div className="flex justify-between">
-                    <Skeleton className="h-5 w-24" />
-                    <Skeleton className="h-5 w-28" />
-                  </div>
-                  <Skeleton className="h-4 w-40 mt-2" />
-                </CardHeader>
-                <CardContent className="py-0 px-4 pb-3">
-                  <Skeleton className="h-4 w-full" />
-                </CardContent>
-              </Card>
-            ))
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Card key={index} className="mb-3">
+                  <CardHeader className="py-3 px-4">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-28" />
+                    </div>
+                    <Skeleton className="h-4 w-40 mt-2" />
+                  </CardHeader>
+                  <CardContent className="py-0 px-4 pb-3">
+                    <Skeleton className="h-4 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : sortedOrders.length === 0 ? (
-            <div className="text-center py-12 border rounded-md">
+            <div className="text-center py-12 border rounded-md animate-in fade-in-50 zoom-in-95 duration-300">
               <p className="text-muted-foreground">No orders to display</p>
             </div>
           ) : (
-            <ScrollArea className="h-[calc(100vh-240px)] pr-4">
-              {sortedOrders.map(order => (
-                <CompactOrderCard 
-                  key={order.id} 
-                  order={order} 
-                  onStatusChange={handleOrderStatusChange}
-                  onModify={handleModifyOrder}
-                />
-              ))}
+            <ScrollArea className="h-[calc(100vh-240px)] pr-4" key={refreshKey}>
+              <div className="space-y-1 animate-in fade-in-50 slide-in-from-bottom-5 duration-300 stagger-1">
+                {sortedOrders.map((order, index) => (
+                  <div 
+                    key={order.id} 
+                    className={cn(
+                      "transition-all duration-300", 
+                      `animate-in slide-in-from-right-5 duration-${300 + index * 50} delay-${index * 25}`
+                    )}
+                  >
+                    <CompactOrderCard 
+                      order={order} 
+                      onStatusChange={handleOrderStatusChange}
+                      onModify={handleModifyOrder}
+                      onItemStatusChange={handleItemStatusChange}
+                    />
+                  </div>
+                ))}
+              </div>
             </ScrollArea>
           )}
         </TabsContent>

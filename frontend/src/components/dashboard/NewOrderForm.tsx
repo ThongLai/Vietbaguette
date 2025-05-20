@@ -633,7 +633,7 @@ const NewOrderForm = () => {
       clearCart();
       toast({
         title: "Order Placed Successfully",
-        description: "The order has been sent to the kitchen.",
+        description: "New order has been placed.",
         variant: "default",
       });
 

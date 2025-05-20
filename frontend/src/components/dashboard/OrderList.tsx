@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Clock, Check, AlertTriangle, UserCheck, Bell, Edit, Trash, Plus, Minus, Flame, MoreVertical } from 'lucide-react';
 import { Order, OrderItem, useOrders } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -250,7 +250,7 @@ const OrderCard = ({
               </CardTitle>
               <div className="flex items-center text-sm text-muted-foreground mt-1">
                 <Clock className="mr-1 h-3 w-3" />
-                {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
+                {format(new Date(order.createdAt), 'dd/MM/yyyy HH:mm')}
                 {order.tableNumber && (
                   <span className="ml-2">• Table {order.tableNumber}</span>
                 )}
