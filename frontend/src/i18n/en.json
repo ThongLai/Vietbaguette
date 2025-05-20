@@ -104,6 +104,8 @@
     "language": {
       "english": "English",
       "vietnamese": "Vietnamese"
-    }
+    },
+    "theme": "Theme",
+    "language": "Language"
   }
 }
