@@ -145,9 +145,8 @@ export const createOrder = async (req: Request, res: Response) => {
     let total = 0;
     // Initialize the processedItems array
     const processedItems: any[] = [];
-    
     // Create the order with items in a transaction
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: PrismaClient) => {
       // First get all the menuItems to calculate the total
       const menuItemIds = items.map(item => item.menuItemId);
       const menuItems = await tx.menuItem.findMany({
@@ -166,7 +165,7 @@ export const createOrder = async (req: Request, res: Response) => {
       });
       // Process each item
       for (const item of items) {
-        const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+        const menuItem = menuItems.find((mi: { id: string }) => mi.id === item.menuItemId);
         
         if (!menuItem) {
           return res.status(400).json({ message: `Menu item with ID ${item.menuItemId} not found` });
@@ -322,7 +321,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     
     try {
       // First update the order
-      updatedOrder = await prisma.$transaction(async (prismaTransaction) => {
+      updatedOrder = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
         // Update the order
         const updatedOrder = await prismaTransaction.order.update({
           where: { id },
@@ -416,7 +415,7 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
     }
     
     // Update item status
-    const result = await prisma.$transaction(async (prismaTransaction) => {
+    const result = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
       // Update the item
       const updatedItem = await prismaTransaction.orderItem.update({
         where: { id: itemId },
@@ -440,13 +439,12 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
       });
       
       let orderStatus: OrderStatus = 'ACTIVE';
-      
       // If ALL items are cancelled, mark the order as cancelled
-      if (allItems.every(item => item.status === 'CANCELLED')) {
+      if (allItems.every((item: { status: string }) => item.status === 'CANCELLED')) {
         orderStatus = 'CANCELLED';
       }
       // If ALL items are completed, mark the order as completed 
-      else if (allItems.every(item => item.status === 'COMPLETED')) {
+      else if (allItems.every((item: { status: string }) => item.status === 'COMPLETED')) {
         orderStatus = 'COMPLETED';
       }
       // Otherwise, keep it as active
@@ -514,7 +512,7 @@ export const updateOrderUrgency = async (req: Request, res: Response) => {
     }
     
     // Update order priority
-    const order = await prisma.$transaction(async (prismaTransaction) => {
+    const order = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
       // Update the order
       const updatedOrder = await prismaTransaction.order.update({
         where: { id },
@@ -606,7 +604,7 @@ export const updateOrderItemQuantity = async (req: Request, res: Response) => {
     }
     
     // Update item quantity and recalculate order total
-    const result = await prisma.$transaction(async (prismaTransaction) => {
+    const result = await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
       // Update the item quantity
       const updatedItem = await prismaTransaction.orderItem.update({
         where: { id: itemId },
@@ -727,7 +725,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
     }
     
     // Delete order in a transaction
-    await prisma.$transaction(async (prismaTransaction) => {
+    await prisma.$transaction(async (prismaTransaction: PrismaClient) => {
       // First delete all order items and their options
       for (const item of existingOrder.items) {
         // Delete selected options for this item
