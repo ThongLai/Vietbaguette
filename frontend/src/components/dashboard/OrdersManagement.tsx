@@ -251,7 +251,7 @@ const CompactOrderCard = ({
                   disabled={isChangingStatus}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleItemStatusChange(order.id, 'COMPLETED');
+                    onStatusChange(order.id, 'COMPLETED');
                   }}
                 >
                   <Check className="h-3.5 w-3.5 mr-1" />
@@ -264,7 +264,7 @@ const CompactOrderCard = ({
                   disabled={isChangingStatus}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleItemStatusChange(order.id, 'CANCELLED');
+                    onStatusChange(order.id, 'CANCELLED');
                   }}
                 >
                   <X className="h-3.5 w-3.5 mr-1" />
@@ -655,30 +655,20 @@ const OrderModificationDialog = ({
 
 // Main component for recent shift orders
 const RecentShiftOrders = () => {
-  const { orders, updateOrderStatus, markOrderUrgent, updateItemStatus } = useOrders();
+  const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders } = useOrders();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('active');
   const [isLoading, setIsLoading] = useState(true);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for animations
   
-  // Load recent orders (last 10 hours)
-  const loadRecentOrders = async () => {
+  // Function to load recent orders and update UI state
+  const fetchRecentOrders = async () => {
     setIsLoading(true);
     try {
-      // Calculate the timestamp for 10 hours ago
-      const tenHoursAgo = new Date();
-      tenHoursAgo.setHours(tenHoursAgo.getHours() - 10);
-      
-      // Filter orders from the last 10 hours
-      // In a real implementation, this would likely be an API call with pagination
-      const recent = orders.filter(order => 
-        new Date(order.createdAt) >= tenHoursAgo
-      );
-      
-      setRecentOrders(recent);
+      // Call the loadRecentOrders function from context
+      await loadRecentOrders();
       // Increment refresh key to trigger animations
       setRefreshKey(prev => prev + 1);
     } catch (error) {
@@ -694,27 +684,25 @@ const RecentShiftOrders = () => {
   };
   
   useEffect(() => {
-    loadRecentOrders();
+    fetchRecentOrders();
     
     // Set up polling for order updates every 30 seconds
-    const intervalId = setInterval(loadRecentOrders, 30000);
+    const intervalId = setInterval(fetchRecentOrders, 30000);
     
     return () => clearInterval(intervalId);
-  }, [orders]);
+  }, []);
   
   // Handle order status changes
   const handleOrderStatusChange = async (orderId: string, newStatus: Order['status']) => {
     try {
-      // Update the local state to reflect changes immediately
-      setRecentOrders(prev => 
-        prev.map(order => 
-          order.id === orderId 
-            ? { ...order, status: newStatus } 
-            : order
-        )
-      );
-
+      // Let the updateOrderStatus function handle the state update
       await updateOrderStatus(orderId, newStatus);
+      
+      // If the selected order is the one being updated, reset it to avoid the blank dialog
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(null);
+        setIsModifyDialogOpen(false);
+      }
     } catch (error) {
       console.error('Error updating order status:', error);
       throw error;
@@ -724,21 +712,6 @@ const RecentShiftOrders = () => {
   // Handle item status changes
   const handleItemStatusChange = (orderId: string, itemId: string, status: OrderItem['status']) => {
     updateItemStatus(orderId, itemId, status);
-    
-    // Update local state for immediate feedback
-    setRecentOrders(prev => 
-      prev.map(order => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            items: order.items.map(item => 
-              item.id === itemId ? { ...item, status } : item
-            )
-          };
-        }
-        return order;
-      })
-    );
   };
   
   // Handle opening modify dialog
@@ -762,15 +735,6 @@ const RecentShiftOrders = () => {
         await markOrderUrgent(modifiedOrder.id, modifiedOrder.isUrgent || false);
       }
       
-      // Update the local state to reflect changes immediately
-      setRecentOrders(prev => 
-        prev.map(order => 
-          order.id === modifiedOrder.id 
-            ? modifiedOrder
-            : order
-        )
-      );
-      
       // Close the dialog and reset selected order
       setIsModifyDialogOpen(false);
       setSelectedOrder(null);
@@ -779,6 +743,9 @@ const RecentShiftOrders = () => {
         description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
         duration: 3000,
       });
+      
+      // Refresh the order data
+      await fetchRecentOrders();
     } catch (error) {
       console.error('Error updating order:', error);
       throw error;
@@ -810,15 +777,16 @@ const RecentShiftOrders = () => {
 
   return (
     <div className="w-full">
+      {/* Header with title and refresh button */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">
-          Orders from Last 10 Hours
+        Recent Orders
           {isLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">(Loading...)</span>}
         </h2>
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={loadRecentOrders}
+          onClick={fetchRecentOrders}
           disabled={isLoading}
           className="transition-all duration-200 hover:bg-muted"
         >
@@ -830,6 +798,7 @@ const RecentShiftOrders = () => {
         </Button>
       </div>
       
+      {/* Tabs for active, completed, and all orders */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full grid grid-cols-3 mb-4">
           <TabsTrigger className="flex justify-center" value="active">
@@ -843,6 +812,7 @@ const RecentShiftOrders = () => {
           </TabsTrigger>
         </TabsList>
         
+        {/* Content for active, completed, and all orders */}
         <TabsContent value={activeTab} className="animate-in fade-in-50 slide-in-from-bottom-5 duration-300">
           {isLoading ? (
             // Loading skeleton

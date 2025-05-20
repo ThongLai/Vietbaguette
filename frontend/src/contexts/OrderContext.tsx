@@ -61,10 +61,12 @@ interface OrderContextType {
   menu: MenuItem[];
   isMenuLoading: boolean;
   orders: Order[];
+  recentOrders: Order[];
   activeOrders: Order[];
   completedOrders: Order[];
   cancelledOrders: Order[];
-  fetchOrders: () => Promise<void>;
+  fetchOrders: () => Promise<Order[]>;
+  loadRecentOrders: () => Promise<Order[]>;
   addOrder: (orderData: { 
     items: { 
       menuItemId: string; 
@@ -90,6 +92,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [isMenuLoading, setIsMenuLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [cancelledOrders, setCancelledOrders] = useState<Order[]>([]);
@@ -139,8 +142,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchMenu = async () => {
+    setIsMenuLoading(true);
     try {
-      setIsMenuLoading(true);
       const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch('/api/menu', {
         headers: {
@@ -158,7 +161,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (): Promise<Order[]> => {
     // Skip if already fetching to prevent duplicate calls
     if (isLoadingOrders) return;
     
@@ -191,6 +194,53 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  // Load orders from the last 10 hours
+  const loadRecentOrders = async (): Promise<Order[]> => {
+    // Skip if already fetching to prevent duplicate calls
+    if (isLoadingOrders) return;
+
+    setIsLoadingOrders(true);
+    try {
+      // Get JWT token from localStorage
+      const token = localStorage.getItem('viet_baguette_token');
+      
+      // Fetch recent orders from API endpoint
+      console.log('Fetching recent orders...');
+      const response = await fetch('/api/orders/recent', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        console.error('Response status:', response.status);
+        console.error('Response text:', await response.text());
+        throw new Error('Failed to fetch recent orders');
+      }
+      
+      const data = await response.json();
+      console.log('Recent orders fetched:', data.length);
+      setRecentOrders(data);
+      return data;
+    } catch (error) {
+      console.error('Error loading recent orders:', error);
+      // Fallback to using filtered orders from the regular orders list
+      console.log('Falling back to filtered orders...');
+      const tenHoursAgo = new Date();
+      tenHoursAgo.setHours(tenHoursAgo.getHours() - 10);
+      
+      const filteredOrders = orders.filter(order => 
+        new Date(order.createdAt) >= tenHoursAgo
+      );
+      
+      setRecentOrders(filteredOrders);
+      toast.error('Failed to load recent orders - using local data');
+      return filteredOrders;
     } finally {
       setIsLoadingOrders(false);
     }
@@ -406,39 +456,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const markOrderVIP = async (orderId: string, isVIP: boolean) => {
-    try {
-      const token = localStorage.getItem('viet_baguette_token');
-      const response = await fetch(`/api/orders/${orderId}/priority`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ isVIP }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update order priority');
-
-      setActiveOrders(prev =>
-        prev.map(order =>
-          order.id === orderId ? { ...order, isVIP } : order
-        )
-      );
-
-      if (isVIP) {
-        toast.info('Order marked as VIP', {
-          description: 'This order will receive priority treatment',
-        });
-      } else {
-        toast.info('Order is no longer marked as VIP');
-      }
-    } catch (error) {
-      console.error('Error updating order priority:', error);
-      toast.error('Failed to update order priority');
-    }
-  };
-
   const deleteOrder = async (orderId: string) => {
     try {
       const token = localStorage.getItem('viet_baguette_token');
@@ -480,8 +497,10 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         activeOrders,
         completedOrders,
         cancelledOrders,
+        recentOrders,
         orders: [...activeOrders, ...completedOrders, ...cancelledOrders],
         fetchOrders,
+        loadRecentOrders,
         addOrder,
         updateOrderStatus,
         updateItemStatus,

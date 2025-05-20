@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import OrderList from '@/components/dashboard/OrderList';
-import RecentShiftOrders from '@/components/dashboard/OrdersManagement';
+import OrdersManagement from '@/components/dashboard/OrdersManagement';
 import NewOrderForm from '@/components/dashboard/NewOrderForm';
 import CommunicationPanel from '@/components/dashboard/CommunicationPanel';
 import ScheduleCalendar from '@/components/dashboard/ScheduleCalendar';
@@ -56,13 +56,13 @@ const Dashboard = () => {
                 </TabsList>
                 <TabsContent value="orders">
                   <div>
-                    <h3 className="font-medium text-lg mb-4">Current Shift</h3>
-                    <RecentShiftOrders />
+                    {/* <h3 className="font-medium text-lg mb-4">Recent Orders</h3> */}
+                    <OrdersManagement />
                   </div>
                 </TabsContent>
                 <TabsContent value="new-order">
                   <div>
-                    <h3 className="font-medium text-lg mb-4">Place New Order</h3>
+                    {/* <h3 className="font-medium text-lg mb-4">Place New Order</h3> */}
                     <NewOrderForm />
                   </div>
                 </TabsContent>

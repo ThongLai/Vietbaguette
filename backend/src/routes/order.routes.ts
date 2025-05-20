@@ -3,6 +3,7 @@ import type { RequestHandler } from 'express';
 import { 
   getAllOrders,
   getOrderById,
+  getRecentOrders,
   createOrder,
   updateOrderStatus,
   updateOrderItemStatus,
@@ -10,7 +11,7 @@ import {
   updateOrderItemQuantity,
   deleteOrder
 } from '../controllers/order.controller.js';
-import { authenticate, allowEitherRole } from '../middleware/auth.middleware.js';
+import { authenticate, restrictToAdmin, allowEitherRole } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -19,6 +20,9 @@ router.use(authenticate as RequestHandler);
 
 // GET all orders
 router.get('/', allowEitherRole as RequestHandler, getAllOrders as RequestHandler);
+
+// GET recent orders (last 10 hours)
+router.get('/recent', allowEitherRole as RequestHandler, getRecentOrders as RequestHandler);
 
 // GET a single order by ID
 router.get('/:id', allowEitherRole as RequestHandler, getOrderById as RequestHandler);

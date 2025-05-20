@@ -775,4 +775,49 @@ export const deleteOrder = async (req: Request, res: Response) => {
     console.error('Delete order error:', error);
     res.status(500).json({ message: 'Server error deleting order' });
   }
+};
+
+// Get recent orders (from the last 10 hours)
+export const getRecentOrders = async (req: Request, res: Response) => {
+  try {
+    // Calculate the timestamp for 10 hours ago
+    const tenHoursAgo = new Date();
+    tenHoursAgo.setHours(tenHoursAgo.getHours() - 10);
+    
+    const orders = await prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: tenHoursAgo
+        }
+      },
+      include: {
+        items: {
+          include: {
+            menuItem: true,
+            selectedOptions: {
+              include: {
+                menuOption: true,
+                optionChoice: true,
+              },
+            },
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    res.json(orders);
+  } catch (error) {
+    console.error('Get recent orders error:', error);
+    res.status(500).json({ message: 'Server error fetching recent orders' });
+  }
 }; 
