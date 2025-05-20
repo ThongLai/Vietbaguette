@@ -448,6 +448,7 @@ const OrderModificationDialog = ({
     
     setIsSaving(true);
     try {
+      // Call the parent's save function that will immediately update UI
       await onSave(modifiedOrder);
       onClose();
     } catch (error) {
@@ -750,33 +751,49 @@ const RecentShiftOrders = () => {
     setIsModifyDialogOpen(true);
   };
   
-  // Handle saving modified order
-  const handleSaveModifiedOrder = async (modifiedOrder: Order) => {
+  // Handle saving modified order with immediate UI update
+  const handleSaveModifiedOrder = async (modifiedOrder: Order): Promise<void> => {
+    // Immediately update the local state for responsive UI
+    setRecentOrders(prevOrders => 
+      prevOrders.map(order => order.id === modifiedOrder.id ? modifiedOrder : order)
+    );
+    
+    // Close the dialog and reset selected order
+    setIsModifyDialogOpen(false);
+    setSelectedOrder(null);
+    
+    // Show success toast
+    toast({
+      description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
+      duration: 3000,
+    });
+    
+    // Handle API calls in background without blocking UI
     try {
+      const promises = [];
+      
       // Update order status if changed
       if (modifiedOrder.status !== selectedOrder?.status) {
-        await updateOrderStatus(modifiedOrder.id, modifiedOrder.status);
+        promises.push(updateOrderStatus(modifiedOrder.id, modifiedOrder.status));
       }
       
       // Update urgent flag if changed
       if (modifiedOrder.isUrgent !== selectedOrder?.isUrgent) {
-        await markOrderUrgent(modifiedOrder.id, modifiedOrder.isUrgent || false);
+        promises.push(markOrderUrgent(modifiedOrder.id, modifiedOrder.isUrgent || false));
       }
       
-      // Close the dialog and reset selected order
-      setIsModifyDialogOpen(false);
-      setSelectedOrder(null);
-      
-      toast({
-        description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
-        duration: 3000,
-      });
-      
-      // Refresh the order data
-      await fetchRecentOrders();
+      // Wait for all promises to resolve
+      await Promise.all(promises);
     } catch (error) {
       console.error('Error updating order:', error);
-      throw error;
+      toast({
+        title: "Update error",
+        description: "Changes might not have been saved to the server",
+        variant: "destructive",
+      });
+      
+      // Refresh data from server to ensure UI is in sync
+      fetchRecentOrders();
     }
   };
   
