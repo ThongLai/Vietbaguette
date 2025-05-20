@@ -11,7 +11,7 @@ import {
   updateOrderItemQuantity,
   deleteOrder
 } from '../controllers/order.controller.js';
-import { authenticate, restrictToAdmin, allowEitherRole } from '../middleware/auth.middleware.js';
+import { authenticate, allowEitherRole } from '../middleware/auth.middleware.js';
 
 const router = Router();
 

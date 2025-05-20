@@ -67,6 +67,7 @@ interface OrderContextType {
   cancelledOrders: Order[];
   fetchOrders: () => Promise<Order[]>;
   loadRecentOrders: () => Promise<Order[]>;
+  setRecentOrders: (orders: Order[] | ((prev: Order[]) => Order[])) => void;
   addOrder: (orderData: { 
     items: { 
       menuItemId: string; 
@@ -297,6 +298,67 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
+      // Find the existing order before making API call
+      const existingOrder = [...activeOrders, ...completedOrders, ...cancelledOrders]
+        .find(order => order.id === orderId);
+        
+      if (!existingOrder) {
+        throw new Error('Order not found');
+      }
+      
+      // Create an updated version of the order
+      const updatedOrder = {
+        ...existingOrder,
+        status
+      };
+      
+      // Update UI immediately for better UX
+      // Handle updating the different order lists based on new status
+      if (status === 'ACTIVE') {
+        // Remove from completed/cancelled if present
+        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+        setCancelledOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Add to active if not already there or update it
+        setActiveOrders(prev => {
+          const exists = prev.some(order => order.id === orderId);
+          if (exists) {
+            return prev.map(order => order.id === orderId ? updatedOrder : order);
+          } else {
+            return [updatedOrder, ...prev];
+          }
+        });
+      } else if (status === 'COMPLETED') {
+        // Remove from active/cancelled if present
+        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
+        setCancelledOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Add to completed if not already there or update it
+        setCompletedOrders(prev => {
+          const exists = prev.some(order => order.id === orderId);
+          if (exists) {
+            return prev.map(order => order.id === orderId ? updatedOrder : order);
+          } else {
+            return [updatedOrder, ...prev];
+          }
+        });
+      } else if (status === 'CANCELLED') {
+        // Remove from active/completed if present
+        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
+        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Add to cancelled if not already there or update it
+        setCancelledOrders(prev => {
+          const exists = prev.some(order => order.id === orderId);
+          if (exists) {
+            return prev.map(order => order.id === orderId ? updatedOrder : order);
+          } else {
+            return [updatedOrder, ...prev];
+          }
+        });
+      }
+      
+      // Now make the API call
       const token = localStorage.getItem('viet_baguette_token');
       const response = await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
@@ -309,70 +371,15 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
       if (!response.ok) throw new Error('Failed to update order status');
 
-      // Instead of fetching orders again, update the state locally
-      const updatedOrder = await response.json();
-      
-      // Find the existing order to get full data if items are missing in response
-      const existingOrder = [...activeOrders, ...completedOrders, ...cancelledOrders]
-        .find(order => order.id === orderId);
-      
-      // Combine existing order data with updated data
-      const fullUpdatedOrder = {
-        ...existingOrder,
-        ...updatedOrder,
-        // Make sure we keep items if not included in the response
-        items: updatedOrder.items || existingOrder?.items || []
-      };
-      
-      // Handle updating the different order lists based on new status
-      if (status === 'ACTIVE') {
-        // Remove from completed/cancelled if present
-        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
-        setCancelledOrders(prev => prev.filter(order => order.id !== orderId));
-        
-        // Add to active if not already there or update it
-        setActiveOrders(prev => {
-          const exists = prev.some(order => order.id === orderId);
-          if (exists) {
-            return prev.map(order => order.id === orderId ? fullUpdatedOrder : order);
-          } else {
-            return [fullUpdatedOrder, ...prev];
-          }
-        });
-      } else if (status === 'COMPLETED') {
-        // Remove from active/cancelled if present
-        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
-        setCancelledOrders(prev => prev.filter(order => order.id !== orderId));
-        
-        // Add to completed if not already there or update it
-        setCompletedOrders(prev => {
-          const exists = prev.some(order => order.id === orderId);
-          if (exists) {
-            return prev.map(order => order.id === orderId ? fullUpdatedOrder : order);
-          } else {
-            return [fullUpdatedOrder, ...prev];
-          }
-        });
-      } else if (status === 'CANCELLED') {
-        // Remove from active/completed if present
-        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
-        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
-        
-        // Add to cancelled if not already there or update it
-        setCancelledOrders(prev => {
-          const exists = prev.some(order => order.id === orderId);
-          if (exists) {
-            return prev.map(order => order.id === orderId ? fullUpdatedOrder : order);
-          } else {
-            return [fullUpdatedOrder, ...prev];
-          }
-        });
-      }
+      // Update with server response data if needed
+      const serverUpdatedOrder = await response.json();
       
       toast.success(`Order status updated to ${status.toLowerCase()}`);
     } catch (error) {
       console.error('Error updating order status:', error);
       toast.error('Failed to update order status');
+      
+            // On error, fetch orders again to ensure UI is in sync with backend      loadRecentOrders();
     }
   };
 
@@ -501,6 +508,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         orders: [...activeOrders, ...completedOrders, ...cancelledOrders],
         fetchOrders,
         loadRecentOrders,
+        setRecentOrders,
         addOrder,
         updateOrderStatus,
         updateItemStatus,

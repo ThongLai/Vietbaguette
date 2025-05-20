@@ -130,7 +130,7 @@ const CompactOrderCard = ({
   onItemStatusChange
 }: { 
   order: Order;
-  onStatusChange: (orderId: string, newStatus: Order['status']) => Promise<void>;
+  onStatusChange: (orderId: string, newStatus: Order['status']) => void;
   onModify: (order: Order) => void;
   onItemStatusChange?: (orderId: string, itemId: string, status: OrderItem['status']) => void;
 }) => {
@@ -250,11 +250,19 @@ const CompactOrderCard = ({
                   className="h-7 px-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30"
                   disabled={isChangingStatus}
                   onClick={(e) => {
-                    e.stopPropagation();
+                    // Update UI immediately without waiting for API
+                    setIsChangingStatus(true);
+                    // Call status change but don't await it
                     onStatusChange(order.id, 'COMPLETED');
+                    // Reset loading after a brief delay for better UX
+                    setTimeout(() => setIsChangingStatus(false), 300);
                   }}
                 >
-                  <Check className="h-3.5 w-3.5 mr-1" />
+                  {isChangingStatus ? (
+                    <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                  )}
                   Complete
                 </Button>
                 <Button 
@@ -263,11 +271,19 @@ const CompactOrderCard = ({
                   className="h-7 px-2 bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:text-red-800 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30"
                   disabled={isChangingStatus}
                   onClick={(e) => {
-                    e.stopPropagation();
+                    // Update UI immediately without waiting for API
+                    setIsChangingStatus(true);
+                    // Call status change but don't await it
                     onStatusChange(order.id, 'CANCELLED');
+                    // Reset loading after a brief delay for better UX
+                    setTimeout(() => setIsChangingStatus(false), 300);
                   }}
                 >
-                  <X className="h-3.5 w-3.5 mr-1" />
+                  {isChangingStatus ? (
+                    <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 mr-1" />
+                  )}
                   Cancel
                 </Button>
               </div>
@@ -655,7 +671,7 @@ const OrderModificationDialog = ({
 
 // Main component for recent shift orders
 const RecentShiftOrders = () => {
-  const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders } = useOrders();
+  const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders, setRecentOrders } = useOrders();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('active');
   const [isLoading, setIsLoading] = useState(true);
@@ -667,10 +683,10 @@ const RecentShiftOrders = () => {
   const fetchRecentOrders = async () => {
     setIsLoading(true);
     try {
+    // Increment refresh key to trigger animations
+      setRefreshKey(prev => prev + 1);
       // Call the loadRecentOrders function from context
       await loadRecentOrders();
-      // Increment refresh key to trigger animations
-      setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.error('Error loading recent orders:', error);
       toast({
@@ -692,21 +708,33 @@ const RecentShiftOrders = () => {
     return () => clearInterval(intervalId);
   }, []);
   
-  // Handle order status changes
-  const handleOrderStatusChange = async (orderId: string, newStatus: Order['status']) => {
-    try {
-      // Let the updateOrderStatus function handle the state update
-      await updateOrderStatus(orderId, newStatus);
-      
-      // If the selected order is the one being updated, reset it to avoid the blank dialog
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder(null);
-        setIsModifyDialogOpen(false);
-      }
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      throw error;
+  // Handle order status changes - immediately update UI state
+  const handleOrderStatusChange = (orderId: string, newStatus: Order['status']) => {
+    // Find the order to update
+    const orderToUpdate = recentOrders.find(order => order.id === orderId);
+    if (!orderToUpdate) return;
+    
+    // Update local state immediately for responsive UI
+    const updatedOrders = recentOrders.map(order => 
+      order.id === orderId ? {...order, status: newStatus} : order
+    );
+    setRecentOrders(updatedOrders);
+    
+    // If the selected order is the one being updated, reset it to avoid blank dialog
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder(null);
+      setIsModifyDialogOpen(false);
     }
+    
+    // Call API in background without waiting
+    updateOrderStatus(orderId, newStatus).catch(error => {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Failed to update order status",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    });
   };
   
   // Handle item status changes
