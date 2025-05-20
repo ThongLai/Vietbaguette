@@ -4,15 +4,15 @@
   "type": "module",
   "prisma": {
     "seed": "tsx prisma/seed.ts"
-  },"scripts": {
+  },
+  "scripts": {
     "dev": "prisma generate && nodemon --exec tsx src/index.ts",
     "build": "prisma generate && tsc -p tsconfig.production.json",
     "start": "node dist/index.js",
     "seed:menu": "tsx scripts/seedMenu.ts",
     "seed:admin": "tsx scripts/seedAdmin.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "node scripts/prisma-migrate.js dev",
-    "vercel-build": "node src/index.ts"
+    "migrate": "node scripts/prisma-migrate.js dev"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
@@ -34,5 +34,19 @@
     "prisma": "^6.8.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
+  },
+  "vercel": {
+    "builds": [
+      {
+        "src": "src/index.ts",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "src/index.ts"
+      }
+    ]
   }
 }
