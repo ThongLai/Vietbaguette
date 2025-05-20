@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import OrderList from '@/components/dashboard/OrderList';
-import RecentShiftOrders from '@/components/dashboard/RecentShiftOrders';
+import RecentShiftOrders from '@/components/dashboard/OrdersManagement';
 import NewOrderForm from '@/components/dashboard/NewOrderForm';
 import CommunicationPanel from '@/components/dashboard/CommunicationPanel';
 import ScheduleCalendar from '@/components/dashboard/ScheduleCalendar';
