@@ -344,12 +344,14 @@ const OrderModificationDialog = ({
   isOpen, 
   onClose, 
   order, 
-  onSave 
+  onSave,
+  handleDeleteOrder
 }: { 
   isOpen: boolean;
   onClose: () => void;
   order: Order | null;
   onSave: (modifiedOrder: Order) => Promise<void>;
+  handleDeleteOrder: (orderId: string) => Promise<void>;
 }) => {
   const [modifiedOrder, setModifiedOrder] = useState<Order | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -635,17 +637,20 @@ const OrderModificationDialog = ({
         <DialogFooter className="flex items-center justify-between">
           <Button 
             variant="destructive" 
-            onClick={() => {
-              if(window.confirm('Are you sure you want to delete this order?')) {
-                // In a real implementation, handle delete logic here
-                toast({
-                  description: "Order deletion is not implemented in this demo",
-                });
-              }
-            }}
+            onClick={() => handleDeleteOrder(modifiedOrder.id)}
+            disabled={isSaving}
           >
-            <Trash className="mr-2 h-4 w-4" />
-            Delete Order
+            {isSaving ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash className="mr-2 h-4 w-4" />
+                Delete Order
+              </>
+            )}
           </Button>
           <div className="flex space-x-2">
             <DialogClose asChild>
@@ -672,13 +677,14 @@ const OrderModificationDialog = ({
 
 // Main component for recent shift orders
 const RecentShiftOrders = () => {
-  const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders, setRecentOrders } = useOrders();
+  const { recentOrders, updateOrderStatus, markOrderUrgent, updateItemStatus, loadRecentOrders, setRecentOrders, deleteOrder } = useOrders();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('active');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModifyDialogOpen, setIsModifyDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key for animations
+  const [hasInitialDataLoaded, setHasInitialDataLoaded] = useState(false);
   
   // Function to load recent orders and update UI state
   const fetchRecentOrders = async () => {
@@ -701,13 +707,20 @@ const RecentShiftOrders = () => {
   };
   
   useEffect(() => {
-    fetchRecentOrders();
+    // Check if orders already exist (page was not reloaded)
+    const shouldFetch = !hasInitialDataLoaded || recentOrders.length === 0;
+    
+    if (shouldFetch) {
+      fetchRecentOrders().then(() => {
+        setHasInitialDataLoaded(true);
+      });
+    }
     
     // Set up polling for order updates every 30 seconds
     const intervalId = setInterval(fetchRecentOrders, 30000);
     
     return () => clearInterval(intervalId);
-  }, []);
+  }, [hasInitialDataLoaded, recentOrders.length]);
   
   // Handle order status changes - immediately update UI state
   const handleOrderStatusChange = (orderId: string, newStatus: Order['status']) => {
@@ -793,6 +806,57 @@ const RecentShiftOrders = () => {
       });
       
       // Refresh data from server to ensure UI is in sync
+      fetchRecentOrders();
+    }
+  };
+  
+  // Handle deleting an order with immediate UI update
+  const handleDeleteOrder = async (orderId: string): Promise<void> => {
+    if (!window.confirm('Are you sure you want to delete this order?')) {
+      return;
+    }
+    
+    // Immediately update UI by removing order from local state
+    setRecentOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+    
+    // Close the dialog if the deleted order is the selected one
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setIsModifyDialogOpen(false);
+      setSelectedOrder(null);
+    }
+    
+    // Show success message
+    toast({
+      description: `Order deleted successfully`,
+      duration: 3000,
+    });
+    
+    // Get token for API call
+    const token = localStorage.getItem('viet_baguette_token');
+    
+    // Call API directly instead of using context function to avoid page refresh
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('Delete order error details:', errorData);
+        throw new Error(`Failed to delete order: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: "Delete Failed",
+        description: "There was an error deleting the order.",
+        variant: "destructive",
+      });
+      // If deletion fails, refresh data to restore correct state
       fetchRecentOrders();
     }
   };
@@ -915,6 +979,7 @@ const RecentShiftOrders = () => {
         }}
         order={selectedOrder}
         onSave={handleSaveModifiedOrder}
+        handleDeleteOrder={handleDeleteOrder}
       />
     </div>
   );
