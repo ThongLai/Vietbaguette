@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       port: 8080,
       proxy: {
         '/api': {
-          target: env.VITE_API_URL,
+          target: "https://vietbaguette-backend.vercel.app",
           changeOrigin: true
         }
       }
