@@ -167,38 +167,27 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       // Get JWT token from localStorage with the correct key
       const token = localStorage.getItem('viet_baguette_token');
       
-      // Fetch active orders
-      const activeResponse = await fetch('/api/orders?status=ACTIVE', {
+      // Fetch all orders in a single request
+      const response = await fetch('/api/orders', {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
-      if (!activeResponse.ok) throw new Error('Failed to fetch active orders');
-      const activeData = await activeResponse.json();
-      setActiveOrders(activeData);
-
-      // Fetch completed orders
-      const completedResponse = await fetch('/api/orders?status=COMPLETED', {
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      if (!completedResponse.ok) throw new Error('Failed to fetch completed orders');
-      const completedData = await completedResponse.json();
-      setCompletedOrders(completedData);
-
-      // Fetch cancelled orders
-      const cancelledResponse = await fetch('/api/orders?status=CANCELLED', {
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      if (!cancelledResponse.ok) throw new Error('Failed to fetch cancelled orders');
-      const cancelledData = await cancelledResponse.json();
-      setCancelledOrders(cancelledData);
-
-      // Update all orders
-      setOrders([...activeData, ...completedData, ...cancelledData]);
+      
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      
+      const allOrders = await response.json();
+      
+      // Filter orders by status on the client side
+      const active = allOrders.filter((order: Order) => order.status === 'ACTIVE');
+      const completed = allOrders.filter((order: Order) => order.status === 'COMPLETED');
+      const cancelled = allOrders.filter((order: Order) => order.status === 'CANCELLED');
+      
+      // Update state in a single batch to prevent multiple re-renders
+      setActiveOrders(active);
+      setCompletedOrders(completed);
+      setCancelledOrders(cancelled);
+      setOrders(allOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
@@ -270,8 +259,65 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
       if (!response.ok) throw new Error('Failed to update order status');
 
-      // To prevent duplication, let's fetch the updated order list rather than manipulating the state
-      await fetchOrders();
+      // Instead of fetching orders again, update the state locally
+      const updatedOrder = await response.json();
+      
+      // Find the existing order to get full data if items are missing in response
+      const existingOrder = [...activeOrders, ...completedOrders, ...cancelledOrders]
+        .find(order => order.id === orderId);
+      
+      // Combine existing order data with updated data
+      const fullUpdatedOrder = {
+        ...existingOrder,
+        ...updatedOrder,
+        // Make sure we keep items if not included in the response
+        items: updatedOrder.items || existingOrder?.items || []
+      };
+      
+      // Handle updating the different order lists based on new status
+      if (status === 'ACTIVE') {
+        // Remove from completed/cancelled if present
+        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+        setCancelledOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Add to active if not already there or update it
+        setActiveOrders(prev => {
+          const exists = prev.some(order => order.id === orderId);
+          if (exists) {
+            return prev.map(order => order.id === orderId ? fullUpdatedOrder : order);
+          } else {
+            return [fullUpdatedOrder, ...prev];
+          }
+        });
+      } else if (status === 'COMPLETED') {
+        // Remove from active/cancelled if present
+        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
+        setCancelledOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Add to completed if not already there or update it
+        setCompletedOrders(prev => {
+          const exists = prev.some(order => order.id === orderId);
+          if (exists) {
+            return prev.map(order => order.id === orderId ? fullUpdatedOrder : order);
+          } else {
+            return [fullUpdatedOrder, ...prev];
+          }
+        });
+      } else if (status === 'CANCELLED') {
+        // Remove from active/completed if present
+        setActiveOrders(prev => prev.filter(order => order.id !== orderId));
+        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+        
+        // Add to cancelled if not already there or update it
+        setCancelledOrders(prev => {
+          const exists = prev.some(order => order.id === orderId);
+          if (exists) {
+            return prev.map(order => order.id === orderId ? fullUpdatedOrder : order);
+          } else {
+            return [fullUpdatedOrder, ...prev];
+          }
+        });
+      }
       
       toast.success(`Order status updated to ${status.toLowerCase()}`);
     } catch (error) {
