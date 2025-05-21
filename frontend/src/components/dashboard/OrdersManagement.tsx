@@ -53,9 +53,7 @@ const RecentShiftOrders = () => {
   
     useEffect(() => {
       // Check if orders already exist (page was not reloaded)
-      const shouldFetch = !hasInitialDataLoaded || recentOrders.length === 0;
-      
-      if (shouldFetch) {
+      if (!hasInitialDataLoaded) {
         fetchRecentOrders().then(() => {
           setHasInitialDataLoaded(true);
         });

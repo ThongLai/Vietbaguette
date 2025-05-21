@@ -107,18 +107,15 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Use VITE_API_URL to determine backend host for WebSocket
     const apiUrl = import.meta.env.VITE_API_URL;
-    let wsUrl = '';
-    if (apiUrl) {
-      const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
-      // Remove trailing slash if present
-      const cleanApiUrl = apiUrl.replace(/\/$/, '');
-      // Remove protocol for host
-      const wsHost = cleanApiUrl.replace(/^https?:\/\//, '');
-      wsUrl = `${wsProtocol}://${wsHost}/ws`;
-    } else {
-      // fallback to window.location (should not happen in production)
-      wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+    if (!apiUrl) {
+      throw new Error('VITE_API_URL is not set in the environment variables');
     }
+    const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
+    // Remove trailing slash if present
+    const cleanApiUrl = apiUrl.replace(/\/$/, '');
+    // Remove protocol for host
+    const wsHost = cleanApiUrl.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}://${wsHost}/ws`;
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
@@ -146,7 +143,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     };
 
     // Initial fetch
-    fetchOrders();
+    // loadRecentOrders();
 
     // Cleanup
     return () => {
@@ -244,6 +241,9 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error loading recent orders:', error);
       // Fallback to using filtered orders from the regular orders list
       console.log('Falling back to filtered orders...');
+      
+      await fetchOrders(); // Fetch all orders (try not to do this as it is not efficient)
+
       const tenHoursAgo = new Date();
       tenHoursAgo.setHours(tenHoursAgo.getHours() - 10);
       
