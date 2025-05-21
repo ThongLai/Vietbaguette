@@ -426,6 +426,7 @@ const NewOrderForm = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentEditingItem, setCurrentEditingItem] = useState<number | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   
   // Refs and state for category tabs scrolling
   const tabsListRef = useRef<HTMLDivElement>(null);
@@ -764,28 +765,41 @@ const NewOrderForm = () => {
             <CardContent>
               <div className="space-y-4">
                 {/* Customer Info */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="tableNumber">Table Number (optional)</Label>
-                    <Input
-                      id="tableNumber"
-                      value={tableNumber}
-                      onChange={(e) => setTableNumber(e.target.value)}
-                      placeholder="Enter table number"
-                      className="mt-1"
-                    />
+                {cart.length > 0 && (
+                  <div className="space-y-4">
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline mb-2 transition-all duration-150 hover:text-primary hover:scale-105 hover:underline-offset-4 focus:outline-none"
+                      onClick={() => setShowDetails((v) => !v)}
+                    >
+                      {showDetails ? "Hide details" : "Add table/customer details (optional)"}
+                    </button>
+                    {showDetails && (
+                      <div className="space-y-2 animate-fade-in">
+                        <div>
+                          <Label htmlFor="tableNumber">Table Number (optional)</Label>
+                          <Input
+                            id="tableNumber"
+                            value={tableNumber}
+                            onChange={(e) => setTableNumber(e.target.value)}
+                            placeholder="Enter table number"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="customerName">Customer Name (optional)</Label>
+                          <Input
+                            id="customerName"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="Enter customer name"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <Label htmlFor="customerName">Customer Name (optional)</Label>
-                    <Input
-                      id="customerName"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Enter customer name"
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
+                )}
                 
                 {/* Cart Items */}
                 <div>
