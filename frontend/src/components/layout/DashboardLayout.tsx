@@ -19,7 +19,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, logout, isAdmin } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isMicActive, startVoiceCommunication, endVoiceCommunication } = useCommunication();
 
   const handleLogout = () => {
