@@ -125,20 +125,68 @@ const CartItemComponent = ({
   onUpdateQuantity, 
   onRemove, 
   onUpdateOptions,
-  onUpdateNotes
+  onUpdateNotes,
+  exitOnDone,
+  exitOnCancel
 }: { 
   item: CartItem; 
   onUpdateQuantity: (quantity: number) => void;
   onRemove: () => void;
-  onUpdateOptions: (optionName: string, choice: string, price?: number) => void;
+  onUpdateOptions: (menuOptionId: string, optionChoiceId: string, price?: number) => void;
   onUpdateNotes: (notes: string) => void;
+  exitOnDone?: () => void;
+  exitOnCancel?: () => void;
 }) => {
-  const [showOptions, setShowOptions] = useState(false);
+  // Use local state for editing
+  const [localItem, setLocalItem] = useState<CartItem>(JSON.parse(JSON.stringify(item)));
+  const [showOptions, setShowOptions] = useState(true);
+
+  // Handlers for local editing
+  const handleLocalUpdateQuantity = (quantity: number) => {
+    setLocalItem({ ...localItem, quantity });
+  };
+  const handleLocalUpdateOptions = (menuOptionId: string, optionChoiceId: string, price?: number) => {
+    const menuItem = localItem.menuItem;
+    const menuOption = menuItem.options?.find(opt => opt.id === menuOptionId);
+    if (!menuOption) return;
+    const optionChoice = menuOption.choices.find(choice => choice.id === optionChoiceId);
+    if (!optionChoice) return;
+    const optionIndex = localItem.options.findIndex(opt => opt.menuOption.id === menuOptionId);
+    const newOption = {
+      menuOption: { id: menuOption.id, name: menuOption.name },
+      optionChoice: { id: optionChoice.id, name: optionChoice.name, price: optionChoice.price },
+    };
+    let newOptions = [...localItem.options];
+    if (optionIndex >= 0) {
+      newOptions[optionIndex] = newOption;
+    } else {
+      newOptions.push(newOption);
+    }
+    setLocalItem({ ...localItem, options: newOptions });
+  };
+  const handleLocalUpdateNotes = (notes: string) => {
+    setLocalItem({ ...localItem, notes });
+  };
+
+  // Save changes to parent on Done
+  const handleDone = () => {
+    onUpdateQuantity(localItem.quantity);
+    localItem.options.forEach(opt => {
+      onUpdateOptions(opt.menuOption.id, opt.optionChoice.id, opt.optionChoice.price);
+    });
+    onUpdateNotes(localItem.notes || '');
+    if (exitOnDone) exitOnDone();
+  };
+
+  // Cancel: just exit, don't save
+  const handleCancel = () => {
+    if (exitOnCancel) exitOnCancel();
+  };
 
   // Calculate total price for this item
-  const basePrice = item.menuItem.price * item.quantity;
-  const optionsPrice = item.options.reduce((total, opt) => 
-    total + (opt.optionChoice.price || 0) * item.quantity, 0);
+  const basePrice = localItem.menuItem.price * localItem.quantity;
+  const optionsPrice = localItem.options.reduce((total, opt) => 
+    total + (opt.optionChoice.price || 0) * localItem.quantity, 0);
   const totalPrice = basePrice + optionsPrice;
 
   return (
@@ -148,16 +196,16 @@ const CartItemComponent = ({
         <div className="flex-grow">
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="font-medium text-base">{item.menuItem.name}</h4>
+              <h4 className="font-medium text-base">{localItem.menuItem.name}</h4>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-sm text-muted-foreground">
-                  £{item.menuItem.price.toFixed(2)} each
+                  £{localItem.menuItem.price.toFixed(2)} each
                 </p>
                 {optionsPrice > 0 && (
                   <>
                     <span className="text-muted-foreground">•</span>
                     <p className="text-sm text-muted-foreground">
-                      +£{(optionsPrice / item.quantity).toFixed(2)} in options
+                      +£{(optionsPrice / localItem.quantity).toFixed(2)} in options
                     </p>
                   </>
                 )}
@@ -166,19 +214,19 @@ const CartItemComponent = ({
           </div>
 
           {/* Options summary - only show when not expanded */}
-          {!showOptions && item.options.length > 0 && (
+          {!showOptions && localItem.options.length > 0 && (
             <div className="mt-2">
               <p className="text-sm text-muted-foreground line-clamp-1">
-                {item.options.map(opt => opt.optionChoice.name).join(', ')}
+                {localItem.options.map(opt => opt.optionChoice.name).join(', ')}
               </p>
             </div>
           )}
 
           {/* Notes preview - only show when not expanded */}
-          {!showOptions && item.notes && (
+          {!showOptions && localItem.notes && (
             <div className="mt-1">
               <p className="text-sm text-muted-foreground italic line-clamp-1">
-                Note: {item.notes}
+                Note: {localItem.notes}
               </p>
             </div>
           )}
@@ -190,16 +238,16 @@ const CartItemComponent = ({
             variant="outline" 
             size="icon"
             className="h-8 w-8"
-            onClick={() => onUpdateQuantity(Math.max(1, item.quantity - 1))}
+            onClick={() => handleLocalUpdateQuantity(Math.max(1, localItem.quantity - 1))}
           >
             <Minus className="h-4 w-4" />
           </Button>
-          <span className="w-8 text-center font-medium">{item.quantity}</span>
+          <span className="w-8 text-center font-medium">{localItem.quantity}</span>
           <Button 
             variant="outline" 
             size="icon"
             className="h-8 w-8"
-            onClick={() => onUpdateQuantity(item.quantity + 1)}
+            onClick={() => handleLocalUpdateQuantity(localItem.quantity + 1)}
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -210,16 +258,16 @@ const CartItemComponent = ({
       {showOptions && (
         <div className="mt-4 pt-4 border-t space-y-4">
           {/* Options selectors */}
-          {item.menuItem.options && item.menuItem.options.length > 0 && (
+          {localItem.menuItem.options && localItem.menuItem.options.length > 0 && (
             <div className="space-y-3">
-              {item.menuItem.options.map((option) => (
+              {localItem.menuItem.options.map((option) => (
                 <div key={option.name} className="grid gap-1.5">
                   <Label htmlFor={`option-${option.name}`}>{option.name}</Label>
                   <Select
-                    value={item.options.find(o => o.menuOption.id === option.id)?.optionChoice.id || ''}
+                    value={localItem.options.find(o => o.menuOption.id === option.id)?.optionChoice.id || ''}
                     onValueChange={(value) => {
                       const choice = option.choices.find(c => c.id === value);
-                      onUpdateOptions(option.id, value, choice?.price);
+                      handleLocalUpdateOptions(option.id, value, choice?.price);
                     }}
                   >
                     <SelectTrigger id={`option-${option.name}`}>
@@ -245,8 +293,8 @@ const CartItemComponent = ({
             <Textarea
               id="notes"
               placeholder="Any special requests?"
-              value={item.notes || ''}
-              onChange={(e) => onUpdateNotes(e.target.value)}
+              value={localItem.notes || ''}
+              onChange={(e) => handleLocalUpdateNotes(e.target.value)}
               className="resize-none"
               rows={2}
             />
@@ -258,19 +306,25 @@ const CartItemComponent = ({
       <div className="mt-4 pt-4 border-t flex justify-between items-center">
         <p className="font-medium flex items-baseline gap-2">
           <span className="text-sm text-muted-foreground">Total:</span>
-          <span className="text-base">£{totalPrice.toFixed(2)}</span>
+          <span className="text-base">£{(localItem.menuItem.price * localItem.quantity + localItem.options.reduce((total, opt) => total + (opt.optionChoice.price || 0) * localItem.quantity, 0)).toFixed(2)}</span>
         </p>
-        
         <div className="flex items-center gap-2">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm"
             className="h-8 px-3 hover:bg-muted"
-            onClick={() => setShowOptions(!showOptions)}
+            onClick={handleCancel}
           >
-            {showOptions ? 'Done' : 'Customize'}
+            Cancel
           </Button>
-          
+          <Button 
+            variant="default" 
+            size="sm"
+            className="h-8 px-3 hover:bg-muted"
+            onClick={handleDone}
+          >
+            Done
+          </Button>
           <Button 
             variant="ghost"
             size="icon"
@@ -475,6 +529,7 @@ const NewOrderForm = () => {
   };
 
   const handleAddToCart = (menuItem: MenuItem) => {
+    console.log('Adding to cart:', menuItem);
     // Create default options if the menu item has options
     const defaultOptions = menuItem.options ? menuItem.options.map(option => ({
       menuOption: {
@@ -632,11 +687,11 @@ const NewOrderForm = () => {
 
       // Clear cart and show success message
       clearCart();
-      toast({
-        title: "Order Placed Successfully",
-        description: "New order has been placed.",
-        variant: "default",
-      });
+      // toast({
+      //   title: "Order Placed Successfully",
+      //   description: "New order has been placed.",
+      //   variant: "default",
+      // });
 
       // Reset form
       setTableNumber('');
@@ -814,15 +869,12 @@ const NewOrderForm = () => {
                       item={cart[currentEditingItem]}
                       onUpdateQuantity={(quantity) => handleUpdateQuantity(currentEditingItem, quantity)}
                       onRemove={() => handleRemoveItem(currentEditingItem)}
-                      onUpdateOptions={(optionName, choice, price) => {
-                        const item = cart[currentEditingItem];
-                        const menuOption = item.menuItem.options?.find(opt => opt.name === optionName);
-                        if (!menuOption) return;
-                        const optionChoice = menuOption.choices.find(c => c.name === choice);
-                        if (!optionChoice) return;
-                        handleUpdateOptions(currentEditingItem, menuOption.id, optionChoice.id);
+                      onUpdateOptions={(menuOptionId, optionChoiceId, price) => {
+                        handleUpdateOptions(currentEditingItem, menuOptionId, optionChoiceId);
                       }}
                       onUpdateNotes={(notes) => handleUpdateNotes(currentEditingItem, notes)}
+                      exitOnDone={() => setCurrentEditingItem(null)}
+                      exitOnCancel={() => setCurrentEditingItem(null)}
                     />
                   ) : (
                     <ScrollArea className="h-[calc(100vh-450px)]">
