@@ -105,9 +105,21 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   // Set up WebSocket connection for real-time updates
   useEffect(() => {
-    const ws = new WebSocket(
-      `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    );
+    // Use VITE_API_URL to determine backend host for WebSocket
+    const apiUrl = import.meta.env.VITE_API_URL;
+    let wsUrl = '';
+    if (apiUrl) {
+      const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
+      // Remove trailing slash if present
+      const cleanApiUrl = apiUrl.replace(/\/$/, '');
+      // Remove protocol for host
+      const wsHost = cleanApiUrl.replace(/^https?:\/\//, '');
+      wsUrl = `${wsProtocol}://${wsHost}/ws`;
+    } else {
+      // fallback to window.location (should not happen in production)
+      wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+    }
+    const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
