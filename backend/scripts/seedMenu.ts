@@ -48,6 +48,7 @@ const menuItems: MenuItem[] = [
       {
         name: 'Extra',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Prawn', price: 1.00 },
           { name: 'Beef', price: 1.00 },
         ],
@@ -181,6 +182,7 @@ const menuItems: MenuItem[] = [
       {
         name: 'Extra',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Any extra topping', price: 2.00 },
         ],
       },
@@ -215,19 +217,20 @@ const menuItems: MenuItem[] = [
           { name: 'Crispy chicken' },
           { name: 'Prawn' },
           { name: 'Tofu' },
-          { name: 'Veggie', price: -1.00 }, // Makes it £5 for veggie
+          { name: 'Veggie', price: -1.00 },
         ],
       },
       {
         name: 'Size',
         choices: [
           { name: 'Small (default)' },
-          { name: 'Large', price: 2.00 }, // Makes it £8 for large
+          { name: 'Large', price: 2.00 },
         ],
       },
       {
         name: 'Extra',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Any extra topping', price: 2.00 },
         ],
       },
@@ -275,6 +278,7 @@ const menuItems: MenuItem[] = [
       {
         name: 'Extra',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Any extra topping', price: 2.00 },
         ],
       },
