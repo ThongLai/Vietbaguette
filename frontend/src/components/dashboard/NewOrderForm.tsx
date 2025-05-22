@@ -531,17 +531,20 @@ const NewOrderForm = () => {
   const handleAddToCart = (menuItem: MenuItem) => {
     console.log('Adding to cart:', menuItem);
     // Create default options if the menu item has options
-    const defaultOptions = menuItem.options ? menuItem.options.map(option => ({
-      menuOption: {
-        id: option.id,
-        name: option.name,
-      },
-      optionChoice: {
-        id: option.choices[0].id,
-        name: option.choices[0].name,
-        price: option.choices[0].price,
-      },
-    })) : [];
+    const defaultOptions = menuItem.options ? menuItem.options.map(option => {
+      const defaultChoice = option.choices.find(choice => choice.isDefault) || option.choices[0];
+      return {
+        menuOption: {
+          id: option.id,
+          name: option.name,
+        },
+        optionChoice: {
+          id: defaultChoice.id,
+          name: defaultChoice.name,
+          price: defaultChoice.price,
+        },
+      };
+    }) : [];
 
     setCart([...cart, {
       menuItem,
@@ -858,7 +861,21 @@ const NewOrderForm = () => {
                 
                 {/* Cart Items */}
                 <div>
-                  <h3 className="font-medium mb-2">Items ({cart.length})</h3>
+                  {currentEditingItem !== null ? (
+                    <div className="flex items-center mb-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-2 py-1 flex items-center gap-1 text-sm font-medium"
+                        onClick={() => setCurrentEditingItem(null)}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Back to Items
+                      </Button>
+                    </div>
+                  ) : (
+                    <h3 className="font-medium mb-2">Items ({cart.length})</h3>
+                  )}
                   {cart.length === 0 ? (
                     <div className="text-center py-6 text-muted-foreground border rounded-md">
                       <p>No items added yet</p>
