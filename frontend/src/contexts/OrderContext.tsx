@@ -238,6 +238,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       console.log('Recent orders fetched:', data.length);
       setRecentOrders(data);
+      
+      // Update the other arrays based on status
+      // setActiveOrders(data.filter(order => order.status === 'ACTIVE'));
+      // setCompletedOrders(data.filter(order => order.status === 'COMPLETED'));
+      // setCancelledOrders(data.filter(order => order.status === 'CANCELLED'));
+
       return data;
     } catch (error) {
       console.error('Error loading recent orders:', error);
@@ -392,7 +398,11 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       // Update with server response data if needed
       const serverUpdatedOrder = await response.json();
       
-      toast.success(`Order status updated to ${status.toLowerCase()}`);
+      toast.success(
+        <>
+          Order <b>#{orderId.slice(-4)}</b> status: <b>{status.charAt(0) + status.slice(1).toLowerCase()}</b>
+        </>
+      );
     } catch (error) {
       console.error('Error updating order status:', error);
       toast.error('Failed to update order status');
@@ -441,7 +451,11 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         return updatedOrders;
       });
 
-      toast.success(`Item status updated to ${status.toLowerCase()}`);
+      toast.success(
+        <>
+          Item <b>#{itemId.slice(-4)}</b> status: <b>{status.charAt(0) + status.slice(1).toLowerCase()}</b>
+        </>
+      );
     } catch (error) {
       console.error('Error updating item status:', error);
       toast.error('Failed to update item status');

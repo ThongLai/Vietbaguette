@@ -121,10 +121,10 @@ const RecentShiftOrders = () => {
       setSelectedOrder(null);
       
       // Show success toast
-      toast({
-        description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
-        duration: 3000,
-      });
+      // toast({
+      //   description: `Order #${modifiedOrder.id.slice(-4)} updated successfully`,
+      //   duration: 3000,
+      // });
       
       // Handle API calls in background without blocking UI
       try {
