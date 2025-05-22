@@ -81,3 +81,6 @@ coverage/
 
 # Seed files
 **/scripts/seedAdmin.js
+
+# Websocket setup
+websocket_setup.txt
