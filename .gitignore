@@ -80,5 +80,4 @@ coverage/
 *.sqlite-journal
 
 # Seed files
-**/scripts/seed*.js
-**/scripts/seed*.ts
+**/scripts/seedAdmin.js

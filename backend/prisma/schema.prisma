@@ -56,6 +56,7 @@ model MenuItem {
   image       String?
   category    String
   vegetarian  Boolean      @default(false)
+  active      Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   orderItems  OrderItem[]
@@ -77,6 +78,7 @@ model OptionChoice {
   id            String           @id @default(uuid())
   name          String
   price         Float?
+  isDefault     Boolean          @default(false)
   menuOptionId  String
   menuOption    MenuOption       @relation(fields: [menuOptionId], references: [id], onDelete: Cascade)
   createdAt     DateTime         @default(now())
