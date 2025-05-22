@@ -73,7 +73,7 @@ coverage/
 
 # Prisma
 /prisma/*.db
-# **/prisma/migrations/*
+**/prisma/migrations/*
 /prisma/.env
 /src/generated/
 *.sqlite
