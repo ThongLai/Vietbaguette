@@ -22,6 +22,14 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   disabled,
 }) => {
   const [open, setOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const [triggerWidth, setTriggerWidth] = React.useState<number | undefined>(undefined);
+
+  React.useLayoutEffect(() => {
+    if (open && triggerRef.current) {
+      setTriggerWidth(triggerRef.current.offsetWidth);
+    }
+  }, [open]);
 
   const handleToggle = (optionValue: string) => {
     if (value.includes(optionValue)) {
@@ -31,16 +39,27 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     }
   };
 
+  // Truncate selected labels for trigger by character count
   const selectedOptions = options.filter((opt) => value.includes(opt.value));
-  const maxToShow = 2;
+  const maxChars = 20;
   let selectedLabels = selectedOptions.map((opt) => opt.label);
   let displayText = "";
-  if (selectedLabels.length <= maxToShow) {
-    displayText = selectedLabels.join(", ");
-  } else {
+  let charCount = 0;
+  let shownLabels: string[] = [];
+  for (let i = 0; i < selectedLabels.length; i++) {
+    const label = selectedLabels[i];
+    if (charCount + label.length + (shownLabels.length > 0 ? 2 : 0) > maxChars) {
+      break;
+    }
+    shownLabels.push(label);
+    charCount += label.length + (shownLabels.length > 1 ? 2 : 0); // +2 for ', '
+  }
+  if (shownLabels.length < selectedLabels.length) {
     displayText =
-      selectedLabels.slice(0, maxToShow).join(", ") +
-      `, ... (+${selectedLabels.length - maxToShow} more)`;
+      shownLabels.join(", ") +
+      `, ... (+${selectedLabels.length - shownLabels.length} more)`;
+  } else {
+    displayText = shownLabels.join(", ");
   }
 
   return (
@@ -49,15 +68,18 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             className={cn(
-              "w-full justify-between text-left font-normal h-10 px-3 py-2 border rounded-md",
+              "w-full max-w-full justify-between text-left font-normal h-10 px-3 py-2 border rounded-md overflow-hidden text-ellipsis whitespace-nowrap",
               disabled && "opacity-50 cursor-not-allowed"
             )}
             disabled={disabled}
           >
-            <span className={cn(!selectedLabels.length && "text-muted-foreground")}
+            <span
+              className={cn(!selectedLabels.length && "text-muted-foreground")}
               title={selectedLabels.join(", ")}
+              style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}
             >
               {displayText || placeholder}
             </span>
@@ -72,7 +94,10 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             </svg>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="p-2 w-64 max-w-full">
+        <PopoverContent
+          style={triggerWidth ? { width: triggerWidth } : undefined}
+          className="p-2 max-w-full"
+        >
           <div className="max-h-60 overflow-y-auto">
             {options.map((opt) => (
               <button

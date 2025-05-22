@@ -4,7 +4,8 @@
   "type": "module",
   "prisma": {
     "seed": "tsx scripts/seedMenu.ts && tsx scripts/seedAdmin.js"
-  },"scripts": {
+  },
+  "scripts": {
     "dev": "prisma generate && nodemon --exec tsx src/index.ts",
     "build": "prisma generate && tsc -p tsconfig.production.json",
     "start": "node dist/index.js",
