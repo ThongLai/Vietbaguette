@@ -66,6 +66,7 @@ model MenuItem {
 model MenuOption {
   id         String           @id @default(uuid())
   name       String
+  multiSelect Boolean         @default(false)
   menuItemId String
   menuItem   MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
   choices    OptionChoice[]

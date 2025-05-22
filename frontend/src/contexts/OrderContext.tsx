@@ -14,6 +14,7 @@ export interface MenuItem {
   options?: {
     id: string;
     name: string;
+    multiSelect?: boolean;
     choices: {
       id: string;
       name: string;

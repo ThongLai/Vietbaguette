@@ -14,6 +14,7 @@ export interface MenuItem {
 export interface MenuOption {
   name: string
   required?: boolean
+  multiSelect?: boolean
   choices: OptionChoice[]
 }
 

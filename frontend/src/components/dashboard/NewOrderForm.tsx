@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { normalizeCategory } from '@/lib/menu-utils';
 import { cn } from '@/lib/utils';
+import { MultiSelectDropdown } from '@/components/ui/multiselect-dropdown';
 export type { CartItem };
 
 // Update CartItem interface to match new data structure
@@ -120,23 +121,28 @@ const CategorySection = ({
   );
 };
 
-const CartItemComponent = ({ 
-  item, 
-  onUpdateQuantity, 
-  onRemove, 
-  onUpdateOptions,
-  onUpdateNotes,
-  exitOnDone,
-  exitOnCancel
-}: { 
-  item: CartItem; 
+// Update CartItemComponent props
+type CartItemComponentProps = {
+  item: CartItem;
   onUpdateQuantity: (quantity: number) => void;
   onRemove: () => void;
   onUpdateOptions: (menuOptionId: string, optionChoiceId: string, price?: number) => void;
   onUpdateNotes: (notes: string) => void;
+  onUpdateAllOptions: (options: CartItem['options']) => void;
   exitOnDone?: () => void;
   exitOnCancel?: () => void;
-}) => {
+};
+
+const CartItemComponent = ({
+  item,
+  onUpdateQuantity,
+  onRemove,
+  onUpdateOptions,
+  onUpdateNotes,
+  onUpdateAllOptions,
+  exitOnDone,
+  exitOnCancel,
+}: CartItemComponentProps) => {
   // Use local state for editing
   const [localItem, setLocalItem] = useState<CartItem>(JSON.parse(JSON.stringify(item)));
   const [showOptions, setShowOptions] = useState(true);
@@ -171,9 +177,7 @@ const CartItemComponent = ({
   // Save changes to parent on Done
   const handleDone = () => {
     onUpdateQuantity(localItem.quantity);
-    localItem.options.forEach(opt => {
-      onUpdateOptions(opt.menuOption.id, opt.optionChoice.id, opt.optionChoice.price);
-    });
+    onUpdateAllOptions(localItem.options);
     onUpdateNotes(localItem.notes || '');
     if (exitOnDone) exitOnDone();
   };
@@ -260,30 +264,62 @@ const CartItemComponent = ({
           {/* Options selectors */}
           {localItem.menuItem.options && localItem.menuItem.options.length > 0 && (
             <div className="space-y-3">
-              {localItem.menuItem.options.map((option) => (
-                <div key={option.name} className="grid gap-1.5">
-                  <Label htmlFor={`option-${option.name}`}>{option.name}</Label>
-                  <Select
-                    value={localItem.options.find(o => o.menuOption.id === option.id)?.optionChoice.id || ''}
-                    onValueChange={(value) => {
-                      const choice = option.choices.find(c => c.id === value);
-                      handleLocalUpdateOptions(option.id, value, choice?.price);
-                    }}
-                  >
-                    <SelectTrigger id={`option-${option.name}`}>
-                      <SelectValue placeholder={`Select ${option.name}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {option.choices.map((choice) => (
-                        <SelectItem key={choice.id} value={choice.id}>
-                          {choice.name}
-                          {choice.price ? ` (+£${choice.price.toFixed(2)})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
+              {localItem.menuItem.options.map((option) => {
+                const isMulti = option.multiSelect;
+                if (isMulti) {
+                  // Multi-select UI: MultiSelectDropdown
+                  const selectedChoices = localItem.options.filter(o => o.menuOption.id === option.id).map(o => o.optionChoice.id);
+                  return (
+                    <div key={option.name} className="grid gap-1.5">
+                      <Label>{option.name}</Label>
+                      <MultiSelectDropdown
+                        options={option.choices.map(choice => ({
+                          label: choice.name,
+                          value: choice.id,
+                          price: choice.price,
+                        }))}
+                        value={selectedChoices}
+                        onChange={ids => {
+                          // Update localItem.options to match selected ids
+                          let newOptions = localItem.options.filter(o => o.menuOption.id !== option.id);
+                          const added = option.choices.filter(choice => ids.includes(choice.id)).map(choice => ({
+                            menuOption: { id: option.id, name: option.name },
+                            optionChoice: { id: choice.id, name: choice.name, price: choice.price },
+                          }));
+                          setLocalItem({ ...localItem, options: [...newOptions, ...added] });
+                        }}
+                        placeholder={`Select ${option.name}`}
+                      />
+                    </div>
+                  );
+                } else {
+                  // Single-select UI: dropdown
+                  return (
+                    <div key={option.name} className="grid gap-1.5">
+                      <Label htmlFor={`option-${option.name}`}>{option.name}</Label>
+                      <Select
+                        value={localItem.options.find(o => o.menuOption.id === option.id)?.optionChoice.id || ''}
+                        onValueChange={(value) => {
+                          const choice = option.choices.find(c => c.id === value);
+                          handleLocalUpdateOptions(option.id, value, choice?.price);
+                        }}
+                      >
+                        <SelectTrigger id={`option-${option.name}`}>
+                          <SelectValue placeholder={`Select ${option.name}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {option.choices.map((choice) => (
+                            <SelectItem key={choice.id} value={choice.id}>
+                              {choice.name}
+                              {choice.price ? ` (+£${choice.price.toFixed(2)})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                }
+              })}
             </div>
           )}
 
@@ -638,6 +674,13 @@ const NewOrderForm = () => {
     setCart([]);
   };
 
+  // In NewOrderForm, add a handler for updating all options
+  const handleUpdateAllOptions = (index: number, options: CartItem['options']) => {
+    const updatedCart = [...cart];
+    updatedCart[index].options = options;
+    setCart(updatedCart);
+  };
+
   const handleSubmitOrder = async () => {
     if (cart.length === 0) {
       toast({
@@ -890,6 +933,7 @@ const NewOrderForm = () => {
                         handleUpdateOptions(currentEditingItem, menuOptionId, optionChoiceId);
                       }}
                       onUpdateNotes={(notes) => handleUpdateNotes(currentEditingItem, notes)}
+                      onUpdateAllOptions={(options) => handleUpdateAllOptions(currentEditingItem, options)}
                       exitOnDone={() => setCurrentEditingItem(null)}
                       exitOnCancel={() => setCurrentEditingItem(null)}
                     />
