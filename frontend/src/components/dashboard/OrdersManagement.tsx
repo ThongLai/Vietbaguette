@@ -151,7 +151,7 @@ const RecentShiftOrders = () => {
         });
         
         // Refresh data from server to ensure UI is in sync
-        fetchRecentOrders();
+        // fetchRecentOrders();
       }
     };
     
@@ -224,10 +224,10 @@ const RecentShiftOrders = () => {
     });
   
     // Reset selected order when changing tabs to avoid the blank dialog bug
-    useEffect(() => {
-      setSelectedOrder(null);
-      setIsModifyDialogOpen(false);
-    }, [activeTab]);
+    // useEffect(() => {
+    //   setSelectedOrder(null);
+    //   setIsModifyDialogOpen(false);
+    // }, [activeTab]);
   
     return (
       <div className="w-full">
@@ -319,7 +319,7 @@ const RecentShiftOrders = () => {
         <OrderModificationDialog
           isOpen={isModifyDialogOpen}
           onClose={() => {
-            setIsModifyDialogOpen(false);
+            // setIsModifyDialogOpen(false);
             setSelectedOrder(null);
           }}
           order={selectedOrder}
@@ -759,7 +759,7 @@ const OrderModificationDialog = ({
   const handleSaveModifications = async () => {
     if (!modifiedOrder) return;
     
-    setIsSaving(true);
+    // setIsSaving(true);
     try {
       // Call the parent's save function that will immediately update UI
       await onSave(modifiedOrder);
