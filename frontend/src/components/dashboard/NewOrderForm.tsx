@@ -50,13 +50,19 @@ const MenuItemCard = ({
   onAddToCart: (item: MenuItem) => void;
 }) => {
   return (
-    <Card className="h-full flex flex-col overflow-hidden hover:shadow-sm transition-shadow duration-200">
+    <Card 
+      className="h-full flex flex-col overflow-hidden hover:shadow-sm transition-shadow duration-200 cursor-pointer group"
+      onClick={() => onAddToCart(item)}
+      tabIndex={0}
+      role="button"
+      aria-label={`Add ${item.name} to order`}
+    >
       <div className="relative h-40 overflow-hidden bg-muted">
         {item.image ? (
           <img 
             src={item.image} 
             alt={item.name} 
-            className="w-full h-full object-cover transition-transform hover:scale-105" 
+            className="w-full h-full object-cover transition-transform group-hover:scale-105" 
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
@@ -85,8 +91,7 @@ const MenuItemCard = ({
         <p className="font-medium">£{item.price.toFixed(2)}</p>
         <Button 
           size="sm" 
-          onClick={() => onAddToCart(item)}
-          className="h-8"
+          className="h-8 pointer-events-none opacity-80"
         >
           <Plus className="h-4 w-4 mr-1" />
           Add
