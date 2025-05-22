@@ -313,8 +313,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
       // Find the existing order before making API call
-      const existingOrder = [...activeOrders, ...completedOrders, ...cancelledOrders]
-        .find(order => order.id === orderId);
+      const existingOrder = [
+        ...activeOrders, 
+        ...completedOrders, 
+        ...cancelledOrders, 
+        ...recentOrders
+      ].find(order => order.id === orderId);
         
       if (!existingOrder) {
         throw new Error('Order not found');
