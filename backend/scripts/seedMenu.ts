@@ -32,7 +32,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Chả Giò',
     price: 5.00,
     description: '3 spring rolls with chicken, veggies, vermicelli, herbs, served with sweet chili dip',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_b4a2b1aac4744b509e00fe683ecc267f~mv2.png',
     category: 'starters',
     vegetarian: false,
   },
@@ -41,7 +41,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Gỏi Cuốn',
     price: 5.00,
     description: '3 homemade rolls with grilled pork, herbs, fried egg, pickles, vermicelli, served with hoisin dip',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_3bec3ce89a3741b2b5033190b2717619~mv2.png',
     category: 'starters',
     vegetarian: false,
     options: [
@@ -59,7 +59,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Bánh Ngô Chiên',
     price: 5.00,
     description: 'Crispy and soft sweetcorn fritters with egg and seasoning, served with sweet chili dip',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_4ac0a9236c774d20b235aef77b99ec22~mv2.png',
     category: 'starters',
     vegetarian: true,
   },
@@ -77,7 +77,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Cánh Gà Nướng',
     price: 5.00,
     description: '6 smoky grilled chicken wings with garlic, onions, and fish sauce, finished with a hint of sweetness and chili',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_2b701d312fb842c397a881098e875547~mv2.jpg',
     category: 'starters',
     vegetarian: false,
   },
@@ -115,7 +115,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Súp Tự Làm',
     price: 4.00,
     description: 'Silky and smooth homemade chicken broth with chicken breast, crab sticks, veggies, egg, herbs',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_a4ad5bd75ac8427f8fb4a984b5017889~mv2.jpg',
     category: 'starters',
     vegetarian: false,
   },
@@ -135,7 +135,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Phở',
     price: 8.00,
     description: 'Aromatic Vietnamese soup with broth, rice noodles, bean sprouts, fresh mint and your choice of protein',
-    image: "https://static.wixstatic.com/media/ac90b1_c908dcfc518b473290319900c7ed73ce~mv2.png",
+    image: 'https://static.wixstatic.com/media/ac90b1_c908dcfc518b473290319900c7ed73ce~mv2.png',
     category: 'main',
     vegetarian: false,
     options: [
@@ -161,7 +161,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Bánh Mì',
     price: 7.00,
     description: 'A unique homemade baguette filled with salad, pickles, herbs and your choice of topping',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_3ebbb0fdce46496f849328a43773502b~mv2.png',
     category: 'main',
     vegetarian: false,
     options: [
@@ -191,7 +191,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Món Xào',
     price: 6.00,
     description: 'Choose your base and protein for a delicious stir-fry',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_b50d40d2e2634af2a9315c10a4d419f9~mv2.png',
     category: 'main',
     vegetarian: false,
     options: [
@@ -238,7 +238,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Bún',
     price: 7.00,
     description: 'Rice vermicelli with salad, pickles, herbs, fried onion, homemade dressing and your choice of protein',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_ca40e04f3b3b4d99afaac07f6d5413d5~mv2.png',
     category: 'main',
     vegetarian: false,
     options: [
@@ -285,7 +285,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Cà Ri Việt Nam',
     price: 7.50,
     description: 'Choose your protein for our authentic Vietnamese curry',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_4fb341d41c8f4c50866ec1214d18ea6f~mv2.png',
     category: 'main',
     vegetarian: false,
     options: [
@@ -307,7 +307,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Thịt Kho',
     price: 9.00,
     description: 'Boiled jasmine rice served with caramelised pork',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_4d8ee55d3e1f427eb113e2bdc9e6aa3d~mv2.png',
     category: 'main',
     vegetarian: false,
     options: [
@@ -345,7 +345,7 @@ const menuItems: MenuItem[] = [
     nameVi: 'Khoai Tây Muối Tiêu',
     price: 4.00,
     description: 'Chips with homemade salt & pepper seasoning',
-    image: undefined,
+    image: 'https://static.wixstatic.com/media/ac90b1_b00bef8a6f944a52947fefbe69379bf7~mv2.png',
     category: 'sides',
     vegetarian: true,
   },
@@ -535,7 +535,7 @@ const menuItems: MenuItem[] = [
       {
         name: 'Flavor',
         choices: [
-          { name: 'Strawberry' },
+          { name: 'Strawberry', isDefault: true },
           { name: 'Mango' },
           { name: 'Peach' },
           { name: 'Lychee' },
@@ -545,26 +545,26 @@ const menuItems: MenuItem[] = [
       {
         name: 'Pops',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Strawberry' },
           { name: 'Mango' },
           { name: 'Peach' },
           { name: 'Passion fruit' },
-          { name: 'None', price: 0 },
         ],
       },
       {
         name: 'Tapioca',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Brown Sugar' },
           { name: 'Original' },
-          { name: 'None', price: 0 },
         ],
       },
       {
         name: 'Ice Level',
         choices: [
           { name: '25%' },
-          { name: '50%' },
+          { name: '50%', isDefault: true },
           { name: '75%' },
           { name: '100%' },
         ],
@@ -573,7 +573,7 @@ const menuItems: MenuItem[] = [
         name: 'Sugar Level',
         choices: [
           { name: '25%' },
-          { name: '50%' },
+          { name: '50%', isDefault: true },
           { name: '75%' },
           { name: '100%' },
         ],
@@ -592,38 +592,38 @@ const menuItems: MenuItem[] = [
       {
         name: 'Flavor',
         choices: [
+          { name: 'Original', isDefault: true },
           { name: 'Strawberry' },
           { name: 'Mango' },
           { name: 'Chocolate' },
           { name: 'Taro' },
           { name: 'Matcha' },
-          { name: 'Original', isDefault: true },
           { name: 'Brown Sugar' },
         ],
       },
       {
         name: 'Pops',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Strawberry' },
           { name: 'Mango' },
           { name: 'Peach' },
           { name: 'Passion fruit' },
-          { name: 'None', price: 0, isDefault: true },
         ],
       },
       {
         name: 'Tapioca',
         choices: [
+          { name: 'None', price: 0, isDefault: true },
           { name: 'Brown Sugar' },
           { name: 'Original' },
-          { name: 'None', price: 0 },
         ],
       },
       {
         name: 'Ice Level',
         choices: [
           { name: '25%' },
-          { name: '50%' },
+          { name: '50%', isDefault: true },
           { name: '75%' },
           { name: '100%' },
         ],
@@ -632,7 +632,7 @@ const menuItems: MenuItem[] = [
         name: 'Sugar Level',
         choices: [
           { name: '25%' },
-          { name: '50%' },
+          { name: '50%', isDefault: true },
           { name: '75%' },
           { name: '100%' },
         ],
