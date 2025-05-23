@@ -46,7 +46,7 @@ const io = new Server(server, {
 
 // Socket.io connections
 io.on('connection', (socket) => {
-  console.log('A user connected', socket.id);
+  console.log('A user connected, socket id: ', socket.id);
 
   // Handle order updates
   socket.on('newOrder', (orderData) => {
@@ -104,4 +104,6 @@ server.listen(PORT, () => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // Don't crash the server
-}); 
+});
+
+export { io }; 

@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { OrderProvider } from "@/contexts/OrderContext";
 import { CommunicationProvider } from "@/contexts/CommunicationContext";
 import { ScheduleProvider } from "@/contexts/ScheduleContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -20,6 +21,7 @@ import MenuManagement from "./pages/MenuManagement";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import Menu from "@/pages/Menu";
 import Orders from "./pages/Orders";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -34,20 +36,23 @@ const App = () => (
                 <TooltipProvider>
                   <Toaster />
                   <Sonner />
-                  <BrowserRouter>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/dashboard/orders" element={<Orders />} />
-                      <Route path="/dashboard/menu-management" element={<MenuManagement />} />
-                      <Route path="/dashboard/employees" element={<EmployeeManagement />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/menu" element={<Menu />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </BrowserRouter>
+                  <NotificationProvider>
+                    <BrowserRouter>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dashboard/orders" element={<Orders />} />
+                        <Route path="/dashboard/menu-management" element={<MenuManagement />} />
+                        <Route path="/dashboard/employees" element={<EmployeeManagement />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/menu" element={<Menu />} />
+                        <Route path="/dashboard/notifications" element={<Notifications />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </BrowserRouter>
+                  </NotificationProvider>
                 </TooltipProvider>
               </ScheduleProvider>
             </CommunicationProvider>

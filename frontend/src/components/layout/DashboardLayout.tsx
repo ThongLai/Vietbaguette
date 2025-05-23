@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import LanguageSwitcher from '@/components/settings/LanguageSwitcher';
 import ThemeSwitcher from '@/components/settings/ThemeSwitcher';
 import Footer from './Footer';
+import { useNotification } from "@/contexts/NotificationContext";
+import NotificationDropdown from "@/components/notification/NotificationDropdown";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,6 +23,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isMicActive, startVoiceCommunication, endVoiceCommunication } = useCommunication();
+  const { notifications } = useNotification();
 
   const handleLogout = () => {
     logout();
@@ -211,11 +214,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               )}
               <ThemeSwitcher className="w-auto" />
               <LanguageSwitcher className="w-auto" />
-              <Link to="/dashboard/notifications">
-                <Button variant="ghost" size="icon">
-                  <Bell className="h-5 w-5" />
-                </Button>
-              </Link>
+              <NotificationDropdown />
               <Link to="/settings">
                 <Button variant="ghost" size="icon">
                   <User className="h-5 w-5" />

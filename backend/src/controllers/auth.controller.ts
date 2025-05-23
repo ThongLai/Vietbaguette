@@ -578,4 +578,28 @@ export const deleteApprovedEmail = async (req: Request, res: Response) => {
     console.error('Delete approved email error:', error);
     res.status(500).json({ message: 'Server error deleting approved email' });
   }
+};
+
+// Get recent notifications for the authenticated user
+export const getRecentNotifications = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const before = req.query.before as string | undefined;
+    const where: any = { userId: req.user.id };
+    if (before) {
+      where.createdAt = { lt: new Date(before) };
+    }
+    const notifications = await prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    res.json(notifications);
+  } catch (error) {
+    console.error('Get recent notifications error:', error);
+    res.status(500).json({ message: 'Server error fetching notifications' });
+  }
 }; 

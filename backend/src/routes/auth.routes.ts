@@ -13,7 +13,8 @@ import {
   selfRegister,
   addApprovedEmail,
   getApprovedEmails,
-  deleteApprovedEmail
+  deleteApprovedEmail,
+  getRecentNotifications
 } from '../controllers/auth.controller.js';
 import { authenticate, restrictToAdmin } from '../middleware/auth.middleware.js';
 
@@ -41,5 +42,8 @@ router.delete('/users/:id', authenticate as RequestHandler, restrictToAdmin as R
 router.get('/approved-emails', authenticate as RequestHandler, restrictToAdmin as RequestHandler, getApprovedEmails as RequestHandler);
 router.post('/approved-emails', authenticate as RequestHandler, restrictToAdmin as RequestHandler, addApprovedEmail as RequestHandler);
 router.delete('/approved-emails/:id', authenticate as RequestHandler, restrictToAdmin as RequestHandler, deleteApprovedEmail as RequestHandler);
+
+// Notifications
+router.get('/notifications', authenticate as RequestHandler, getRecentNotifications as RequestHandler);
 
 export default router; 

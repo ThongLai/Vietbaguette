@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { z } from 'zod';
 import { PrismaClient, Prisma, OrderStatus, OrderItemStatus } from '@prisma/client';
+import { io } from '../index.js'; // Adjust the path if needed
 
 // Validation schemas
 const selectedOptionSchema = z.object({
@@ -277,6 +278,12 @@ export const createOrder = async (req: Request, res: Response) => {
       )
     );
     
+    io.emit('orderNotification', {
+      type: 'NEW_ORDER',
+      content: `New order #${createdOrder.id.substring(0, 8)} created`,
+      order: createdOrder,
+    });
+    
     return createdOrder;
   });
   
@@ -364,6 +371,12 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             })
           )
         );
+        
+        io.emit('orderNotification', {
+          type: 'ORDER_UPDATED',
+          content: `Order #${id.substring(0, 8)} status updated to ${status}`,
+          order: updatedOrder,
+        });
         
         return updatedOrder;
       });
@@ -477,6 +490,12 @@ export const updateOrderItemStatus = async (req: Request, res: Response) => {
         )
       );
       
+      io.emit('orderNotification', {
+        type: 'ORDER_UPDATED',
+        content: `${existingItem.menuItem.name} in order #${orderId.substring(0, 8)} is now ${status}`,
+        orderId,
+      });
+      
       return { item: updatedItem, order: updatedOrder };
     });
     
@@ -557,6 +576,12 @@ export const updateOrderUrgency = async (req: Request, res: Response) => {
           })
         )
       );
+      
+      io.emit('orderNotification', {
+        type: 'ORDER_UPDATED',
+        content,
+        orderId: id,
+      });
       
       return updatedOrder;
     });
@@ -693,6 +718,12 @@ export const updateOrderItemQuantity = async (req: Request, res: Response) => {
         )
       );
       
+      io.emit('orderNotification', {
+        type: 'ORDER_UPDATED',
+        content: `Quantity updated for ${existingItem.menuItem.name} in order #${orderId.substring(0, 8)} to ${quantity}`,
+        orderId,
+      });
+      
       return { item: updatedItem, order: updatedOrder };
     });
     
@@ -766,6 +797,12 @@ export const deleteOrder = async (req: Request, res: Response) => {
           })
         )
       );
+    });
+    
+    io.emit('orderNotification', {
+      type: 'ORDER_DELETED',
+      content: `Order #${id.substring(0, 8)} has been deleted`,
+      orderId: id,
     });
     
     res.status(200).json({ message: 'Order deleted successfully' });
