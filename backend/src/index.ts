@@ -24,8 +24,13 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN as string;
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  ...(process.env.CORS_ORIGIN?.split(',') || []),
+  ...(process.env.FRONTEND_URL?.split(',') || [])
+];
+
 app.use(cors({
-  origin: [CORS_ORIGIN, FRONTEND_URL],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
