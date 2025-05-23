@@ -55,7 +55,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
   // Fetch more notifications (for pagination)
   const fetchMoreNotifications = async (limit = 20) => {
-    if (notifications.length === 0) return;
+    if (notifications.length === 0) return [];
     const last = notifications[notifications.length - 1];
     const before = last.createdAt;
     try {
@@ -71,12 +71,13 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       );
       if (response.ok) {
         const data = await response.json();
-        // Avoid duplicates
         setNotifications((prev) => [...prev, ...data.filter((n: any) => !prev.some((p) => p.id === n.id))]);
+        return data;
       }
     } catch (error) {
       // handle error
     }
+    return [];
   };
 
   return (

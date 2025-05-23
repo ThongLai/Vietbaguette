@@ -11,7 +11,7 @@ const Notifications = () => {
 
   const handleLoadMore = async () => {
     setLoading(true);
-    await fetchMoreNotifications(10);
+    await fetchMoreNotifications(20);
     setLoading(false);
   };
 
@@ -26,7 +26,12 @@ const Notifications = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
           </Button>
-          <h2 className="text-2xl font-bold flex-1 text-center">Notifications</h2>
+          <h2 className="text-2xl font-bold flex-1 text-center flex items-center gap-2 justify-center">
+            Notifications
+            <span className="inline-block min-w-[1.5em] px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white align-middle">
+              {notifications.length}
+            </span>
+          </h2>
           <div className="w-10" /> {/* Spacer for symmetry */}
         </div>
         {/* Content */}

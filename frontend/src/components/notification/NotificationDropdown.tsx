@@ -4,7 +4,7 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const NotificationDropdown = () => {
   const { notifications, setNotifications, fetchMoreNotifications } = useNotification();
@@ -48,9 +48,9 @@ const NotificationDropdown = () => {
   const handleLoadMore = async () => {
     setLoading(true);
     const prevLength = notifications.length;
-    await fetchMoreNotifications();
+    const newData = await fetchMoreNotifications(PAGE_SIZE);
     setLoading(false);
-    setHasMore(notifications.length - prevLength === PAGE_SIZE);
+    setHasMore(newData && newData.length === PAGE_SIZE);
   };
 
   return (
@@ -66,7 +66,12 @@ const NotificationDropdown = () => {
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-lg z-50 max-h-96 overflow-y-auto">
           <div className="p-4 border-b font-bold flex items-center justify-between">
-            <span>Notifications</span>
+            <span className="flex items-center gap-2">
+              Notifications
+              <span className="inline-block min-w-[1.5em] px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white align-middle">
+                {notifications.length}
+              </span>
+            </span>
             <Link to="/dashboard/notifications" className="text-xs text-blue-600 hover:underline">See all</Link>
           </div>
           {notifications.length === 0 ? (
@@ -74,7 +79,7 @@ const NotificationDropdown = () => {
           ) : (
             <>
               <ul>
-                {notifications.slice(0, 10).map((notif, idx) => (
+                {notifications.map((notif, idx) => (
                   <li key={idx} className={`p-3 border-b last:border-b-0 flex items-start gap-2 ${!read[idx] ? 'font-bold bg-blue-50 dark:bg-blue-900' : ''}`}>
                     {!read[idx] && <span className="mt-1 mr-1 h-2 w-2 rounded-full bg-blue-500 inline-block" />}
                     <div className="flex-1">
