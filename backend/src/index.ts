@@ -19,18 +19,14 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT as string;
 const FRONTEND_URL = process.env.FRONTEND_URL as string;
 const CORS_ORIGIN = process.env.CORS_ORIGIN as string;
+const FRONTEND_URL_LOCAL = process.env.FRONTEND_URL_LOCAL as string;
 
 // Initialize Express
 const app = express();
 
 // Middleware
-const allowedOrigins = [
-  ...(process.env.CORS_ORIGIN?.split(',') || []),
-  ...(process.env.FRONTEND_URL?.split(',') || [])
-];
-
 app.use(cors({
-  origin: allowedOrigins,
+  origin: [CORS_ORIGIN, FRONTEND_URL, FRONTEND_URL_LOCAL],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
