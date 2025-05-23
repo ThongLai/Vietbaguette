@@ -39,7 +39,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: [CORS_ORIGIN, FRONTEND_URL],
+    origin: [CORS_ORIGIN, FRONTEND_URL, FRONTEND_URL_LOCAL],
     methods: ['GET', 'POST'],
     credentials: true
   }
